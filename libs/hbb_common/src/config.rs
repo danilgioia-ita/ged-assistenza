@@ -69,7 +69,8 @@ lazy_static::lazy_static! {
     static ref ONLINE: Mutex<HashMap<String, i64>> = Default::default();
     pub static ref PROD_RENDEZVOUS_SERVER: RwLock<String> = RwLock::new("".to_owned());
     pub static ref EXE_RENDEZVOUS_SERVER: RwLock<String> = Default::default();
-    pub static ref APP_NAME: RwLock<String> = RwLock::new("RustDesk".to_owned());
+    // GED Assistance: il nome dell'app (titoli, finestre). RustDesk lo usa anche per riconoscere un «client personalizzato».
+    pub static ref APP_NAME: RwLock<String> = RwLock::new("GED Assistance".to_owned());
     static ref KEY_PAIR: Mutex<Option<KeyPair>> = Default::default();
     static ref USER_DEFAULT_CONFIG: RwLock<(UserDefaultConfig, Instant)> = RwLock::new((UserDefaultConfig::load(), Instant::now()));
     pub static ref NEW_STORED_PEER_CONFIG: Mutex<HashSet<String>> = Default::default();
@@ -79,7 +80,10 @@ lazy_static::lazy_static! {
     pub static ref OVERWRITE_DISPLAY_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
     pub static ref DEFAULT_LOCAL_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
     pub static ref OVERWRITE_LOCAL_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
-    pub static ref HARD_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
+    // GED Assistance ha due versioni dallo stesso codice, scelte quando si compila (GED_VARIANTE): quella del CLIENTE
+    // «solo ricevere» (si fa assistere: niente campo per collegarsi ad altri) e quella del TECNICO «solo collegarsi»
+    // (i nostri Mac e PC). E' la stessa leva («conn-type») dei client personalizzati di RustDesk.
+    pub static ref HARD_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(ged_variante());
     pub static ref BUILTIN_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
 }
 
@@ -2770,6 +2774,13 @@ fn is_option_can_save(
 }
 
 #[inline]
+fn ged_variante() -> HashMap<String, String> {
+    let mut m = HashMap::new();
+    let tipo = if option_env!("GED_VARIANTE") == Some("tecnico") { "outgoing" } else { "incoming" };
+    m.insert("conn-type".to_owned(), tipo.to_owned());
+    m
+}
+
 pub fn is_incoming_only() -> bool {
     HARD_SETTINGS
         .read()
