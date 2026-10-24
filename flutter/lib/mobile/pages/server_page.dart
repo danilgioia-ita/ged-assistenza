@@ -949,7 +949,7 @@ void androidChannelInit() {
   });
 }
 
-// GED Assistenza: l'app la installa il cliente su richiesta di GED Service e si collega SOLO al nostro server;
+// GED Assistance: l'app la installa il cliente su richiesta di GED Service e si collega SOLO al nostro server;
 // l'avviso «SCAM» di RustDesk (pensato per l'app generica) qui spaventerebbe chi ci ha chiamati. Si avvia e basta.
 void showScamWarning(BuildContext context, ServerModel serverModel) {
   serverModel.toggleService();

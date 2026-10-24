@@ -114,7 +114,7 @@ const CHARS: &[char] = &[
     'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 ];
 
-// GED Assistenza: il server di GED Service, gia' dentro l'app (il cliente non imposta niente).
+// GED Assistance: il server di GED Service, gia' dentro l'app (il cliente non imposta niente).
 pub const RENDEZVOUS_SERVERS: &[&str] = &["assistenza.gedservice.it"];
 pub const RS_PUB_KEY: &str = "e0XewrGBYZ+8V68O7xkuNO5YicPcSA8aP2k3P8i0ZyE=";
 

@@ -1,7 +1,7 @@
-name: GED Assistenza — APK Android
+name: GED Assistance — APK Android
 
 # GED ASSISTENZA (24 ottobre 2026). La nostra app di assistenza remota, costruita dal codice di RustDesk 1.5.0 con il server
-# di GED Service gia' dentro (libs/hbb_common/src/config.rs), il nome «GED Assistenza», un'identita' Android sua
+# di GED Service gia' dentro (libs/hbb_common/src/config.rs), il nome «GED Assistance», un'identita' Android sua
 # (it.gedservice.assistenza) e senza l'avviso «SCAM» dell'app generica. Ricavato dal job «build-rustdesk-android» di
 # flutter-build.yml, solo per ARM a 64 e 32 bit. Parte SOLO a mano. L'APK e' firmato con la chiave di prova (debug):
 # basta per l'emulatore e per le prove; per i clienti e il Play Store servira' la chiave nostra.
@@ -289,7 +289,7 @@ jobs:
           mkdir -p signed-apk; pushd signed-apk
           mv ../rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}${{ matrix.job.suffix }}.apk .
 
-      - name: L'APK di GED Assistenza come artefatto del giro
+      - name: L'APK di GED Assistance come artefatto del giro
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ged-assistenza-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
