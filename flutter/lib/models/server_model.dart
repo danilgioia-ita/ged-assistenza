@@ -400,7 +400,12 @@ class ServerModel with ChangeNotifier {
       }
     } else {
       await checkRequestNotificationPermission();
-      if (bind.mainGetLocalOption(key: kOptionDisableFloatingWindow) != 'Y') {
+      // GED Assistance, versione cliente: niente finestra galleggiante. Il permesso «Mostra sopra altre app» su un'app
+      // scaricata dal sito e' bloccato da Android (impostazioni con limitazioni): la prova del 26/10 dal sito mandava il
+      // cliente in una pagina di sistema con l'interruttore grigio e l'avviso «puo' mettere a rischio le tue informazioni
+      // finanziarie», per un'icona che non serve all'assistenza.
+      if (!bind.isIncomingOnly() &&
+          bind.mainGetLocalOption(key: kOptionDisableFloatingWindow) != 'Y') {
         await checkFloatingWindowPermission();
       }
       final res = await parent.target?.dialogManager
