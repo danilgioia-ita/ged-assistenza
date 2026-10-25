@@ -47,6 +47,13 @@ class HomePageState extends State<HomePage> {
 
   void initPages() {
     _pages.clear();
+    // GED Assistance, versione CLIENTE («solo ricevere»): una schermata sola, quella dell'assistenza. Il cliente apre
+    // l'app e trova subito «Avvia assistenza», senza schede: la chat compare da sola durante la sessione, e le
+    // impostazioni non gli servono (il server e' gia' dentro).
+    if (isAndroid && bind.isIncomingOnly()) {
+      _pages.add(ServerPage());
+      return;
+    }
     if (!bind.isIncomingOnly()) {
       _pages.add(ConnectionPage(
         appBarActions: [],
@@ -79,7 +86,7 @@ class HomePageState extends State<HomePage> {
             title: appTitle(),
             actions: _pages.elementAt(_selectedIndex).appBarActions,
           ),
-          bottomNavigationBar: BottomNavigationBar(
+          bottomNavigationBar: _pages.length < 2 ? null : BottomNavigationBar(
             key: navigationBarKey,
             items: _pages
                 .map((page) =>
