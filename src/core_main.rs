@@ -167,6 +167,23 @@ pub fn core_main() -> Option<Vec<String>> {
         }
     }
     hbb_common::init_log(false, &log_name);
+    // GED Assistance: una riga per capire DOPO quale programma ha girato e con quale configurazione (prova del
+    // 26/10: la finestra mostrava testi di una versione precedente, e l'ID era cambiato fra due aperture).
+    log::info!(
+        "GED avvio: versione {} del {}, commit {}, variante {}, nome «{}», exe {:?}, comando {:?} (solo il primo argomento: gli altri possono essere password), configurazione {:?} (ID qui: {}), registro {:?}",
+        crate::VERSION,
+        crate::BUILD_DATE,
+        option_env!("GITHUB_SHA").unwrap_or("locale"),
+        option_env!("GED_VARIANTE").unwrap_or("cliente"),
+        crate::get_app_name(),
+        std::env::current_exe().ok(),
+        args.first(),
+        config::Config::file(),
+        // Solo per la finestra principale: in altri processi (--import-config del servizio) leggere l'ID qui
+        // creerebbe la configurazione prima dell'importazione e la farebbe saltare (import_config confronta le date).
+        if args.is_empty() { config::Config::get_id() } else { "-".to_owned() },
+        config::Config::log_path()
+    );
 
     // linux uni (url) go here.
     #[cfg(all(target_os = "linux", feature = "flutter"))]
@@ -274,6 +291,7 @@ pub fn core_main() -> Option<Vec<String>> {
                     Ok(_) => translate("Installation Successful!".to_string()),
                     Err(err) => {
                         println!("Failed with error: {err}");
+                        log::error!("GED installazione silenziosa NON riuscita: {err:?}");
                         translate("Installation failed!".to_string())
                     }
                 };

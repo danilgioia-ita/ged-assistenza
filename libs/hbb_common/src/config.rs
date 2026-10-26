@@ -1062,6 +1062,23 @@ impl Config {
             );
         }
 
+        // GED Assistance (prova del 26/10 su Windows): l'ID deve restare quello del PC, qualunque sia la cartella
+        // della configurazione che lo genera — il portatile (utente), l'installato (servizio di sistema, che di
+        // norma lo importa dall'utente), un amministratore diverso che conferma l'UAC, una versione col nome
+        // vecchio «GED Assistance» (sulla VM di Danilo lo stesso PC ha mostrato 388294485 e poi 289748042: due
+        // configurazioni diverse, ognuna col suo ID). Ricavato dalla scheda di rete, come fa RustDesk, l'ID di una
+        // configurazione nuova cambia anche solo se Windows elenca le schede in un altro ordine (macchine virtuali,
+        // VPN, Wi-Fi Direct). Su Windows lo si ricava dal MachineGuid (HKLM\SOFTWARE\Microsoft\Cryptography),
+        // lo stesso per tutti gli utenti e per SYSTEM; la scheda di rete resta il ripiego se il registro non risponde.
+        // Vale solo quando un ID non c'e' ancora: un ID gia' scritto nella configurazione non si tocca.
+        #[cfg(windows)]
+        {
+            if let Some(id) = ged_id_dal_pc() {
+                log::info!("GED: ID generato dal MachineGuid del PC: {}", id);
+                return Some(id);
+            }
+            log::warn!("GED: MachineGuid non leggibile, ID dalla scheda di rete (puo' cambiare)");
+        }
         #[cfg(not(any(target_os = "android", target_os = "ios")))]
         {
             let mut id = 0u32;
@@ -2804,6 +2821,21 @@ fn ged_overwrite() -> HashMap<String, String> {
         m.insert("allow-auto-update".to_owned(), "N".to_owned());
     }
     m
+}
+
+// GED Assistance: ID di 9 cifre (100000000-499999999, come quelli di RustDesk ricavati dalla scheda di rete) dal
+// MachineGuid di Windows. Vedi get_auto_id().
+#[cfg(windows)]
+fn ged_id_dal_pc() -> Option<String> {
+    use sha2::Digest;
+    let uid = machine_uid::get().ok()?;
+    let uid = uid.trim().to_lowercase();
+    if uid.is_empty() {
+        return None;
+    }
+    let h = sha2::Sha256::digest(format!("ged-assistance:{uid}").as_bytes());
+    let n = u32::from_be_bytes([h[0], h[1], h[2], h[3]]);
+    Some((100_000_000u32 + n % 400_000_000u32).to_string())
 }
 
 // GED Assistance: le schede delle impostazioni che il cliente non deve vedere. Resta «Sicurezza», che serve al

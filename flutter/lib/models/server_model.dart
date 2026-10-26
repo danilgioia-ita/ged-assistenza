@@ -463,7 +463,18 @@ class ServerModel with ChangeNotifier {
   // Niente segreti: l'app e' pubblica, quindi la rotta non deve fidarsi di quello che riceve.
   static const String _kGedAvvisoUrl =
       'https://crm.gedservice.it/api/assistenza/aperta';
+  // Prova del 26/10 su Windows: alla PRIMA apertura l'ID non era pronto nemmeno dopo 5 secondi (il servizio sta
+  // ancora partendo, e su una macchina lenta o emulata ci mette di piu') e l'avviso non partiva; alla seconda si'.
+  // Ora si riprova ogni 3 secondi fino a un minuto, sempre in sottofondo.
+  static const Duration _kGedAttesaId = Duration(seconds: 3);
+  static const Duration _kGedAttesaIdMassima = Duration(seconds: 60);
   DateTime? _gedUltimoAvviso;
+
+  void _gedLog(String livello, String messaggio) {
+    try {
+      bind.mainGedLog(livello: livello, messaggio: messaggio);
+    } catch (_) {}
+  }
 
   void gedAvvisaApertura() {
     if (!bind.isIncomingOnly() || isWeb) return;
@@ -476,14 +487,32 @@ class ServerModel with ChangeNotifier {
     }
     _gedUltimoAvviso = adesso;
     () async {
+      var id = '';
       try {
-        var id = await bind.mainGetMyId();
-        if (id.isEmpty) {
-          // All'avvio l'ID puo' non essere ancora pronto: si riprova una volta sola.
-          await Future.delayed(const Duration(seconds: 5));
-          id = await bind.mainGetMyId();
+        final inizio = DateTime.now();
+        var tentativi = 0;
+        while (true) {
+          tentativi++;
+          try {
+            id = await bind.mainGetMyId();
+          } catch (_) {
+            id = '';
+          }
+          if (id.isNotEmpty) break;
+          if (DateTime.now().difference(inizio) >= _kGedAttesaIdMassima) {
+            break;
+          }
+          await Future.delayed(_kGedAttesaId);
         }
-        if (id.isEmpty) return;
+        if (id.isEmpty) {
+          _gedLog('avviso',
+              "avviso di apertura al CRM NON mandato: l'ID non e' pronto dopo ${_kGedAttesaIdMassima.inSeconds} secondi ($tentativi tentativi)");
+          return;
+        }
+        if (tentativi > 1) {
+          _gedLog('info',
+              "avviso di apertura: ID $id pronto al tentativo $tentativi");
+        }
         var nome = '';
         var os = '';
         try {
@@ -512,15 +541,24 @@ class ServerModel with ChangeNotifier {
         // non resta appesa in fondo.
         final client = http.Client();
         try {
-          await client
+          final risposta = await client
               .post(Uri.parse(_kGedAvvisoUrl),
                   headers: {'Content-Type': 'application/json'}, body: corpo)
               .timeout(const Duration(seconds: 5));
+          if (risposta.statusCode >= 200 && risposta.statusCode < 300) {
+            _gedLog('info',
+                'avviso di apertura al CRM mandato (ID $id, risposta ${risposta.statusCode})');
+          } else {
+            _gedLog('avviso',
+                'avviso di apertura al CRM: il CRM ha risposto ${risposta.statusCode} (ID $id)');
+          }
         } finally {
           client.close();
         }
-      } catch (_) {
-        // ignorato apposta: vedi sopra
+      } catch (e) {
+        // Nessun effetto per il cliente: vedi sopra. Nel registro solo il tipo di errore, non il contenuto.
+        _gedLog('avviso',
+            'avviso di apertura al CRM NON mandato (ID ${id.isEmpty ? "-" : id}): ${e.runtimeType}');
       }
     }();
   }

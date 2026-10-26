@@ -2387,6 +2387,17 @@ pub fn main_set_share_rdp(enable: bool) {
     set_share_rdp(enable)
 }
 
+// GED Assistance: una riga nel registro di RustDesk scritta dal lato Flutter (l'avviso di apertura al CRM, 26/10).
+// Solo testi nostri, senza dati personali oltre l'ID.
+pub fn main_ged_log(livello: String, messaggio: String) -> SyncReturn<bool> {
+    match livello.as_str() {
+        "errore" => log::error!("GED: {}", messaggio),
+        "avviso" => log::warn!("GED: {}", messaggio),
+        _ => log::info!("GED: {}", messaggio),
+    }
+    SyncReturn(true)
+}
+
 pub fn main_goto_install() -> SyncReturn<bool> {
     goto_install();
     SyncReturn(true)

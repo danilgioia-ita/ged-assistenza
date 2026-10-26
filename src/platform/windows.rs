@@ -1727,6 +1727,7 @@ copy /Y \"{tmp_path}\\{app_name} Tray.lnk\" \"%PROGRAMDATA%\\Microsoft\\Windows\
 chcp 65001
 md \"{path}\"
 {copy_exe}
+{rename_exe}
 reg add {subkey} /f
 reg add {subkey} /f /v DisplayIcon /t REG_SZ /d \"{display_icon}\"
 reg add {subkey} /f /v DisplayName /t REG_SZ /d \"{display_name}\"
@@ -1767,9 +1768,33 @@ copy /Y \"{tmp_path}\\Uninstall {app_name}.lnk\" \"{path}\\\"
         sleep = if debug { "timeout 300" } else { "" },
         dels = if debug { "" } else { &dels },
         copy_exe = copy_exe_cmd(&src_exe, &exe, &path)?,
+        // GED Assistance: XCOPY porta nella cartella d'installazione l'exe col nome con cui e' stato compilato
+        // («rustdesk.exe», anche dentro il portatile), ma servizio, collegamenti, registro e is_installed() cercano
+        // «{app_name}.exe» = «GED-Assistance.exe». Con RustDesk i due nomi coincidono (Windows non distingue
+        // maiuscole), con noi no: senza questa riga l'installazione «finiva» con un servizio che punta a un file
+        // che non c'e'. update_me() la usa gia'.
+        rename_exe = rename_exe_cmd(&src_exe, &path)?,
         import_config = get_import_config(&exe),
     );
-    run_cmds(cmds, debug, "install")?;
+    log::info!(
+        "GED installazione: nome «{}», da «{}» a «{}» (exe «{}»), configurazione da importare «{}», registro «{}»",
+        app_name,
+        src_exe,
+        path,
+        exe,
+        Config::file().display(),
+        subkey
+    );
+    log::info!("GED installazione: chiedo i permessi di amministratore (UAC) e lancio lo script");
+    if let Err(err) = run_cmds(cmds, debug, "install") {
+        log::error!("GED installazione: lo script con i permessi di amministratore non e' andato: {err:?}");
+        return Err(err);
+    }
+    log::info!(
+        "GED installazione: script finito; il file installato {} c'e'? {}",
+        exe,
+        std::path::Path::new(&exe).exists()
+    );
     run_after_run_cmds(silent);
     Ok(())
 }
@@ -4020,6 +4045,27 @@ pub fn try_kill_broker() {
         ))
         .creation_flags(winapi::um::winbase::CREATE_NO_WINDOW)
         .spawn());
+}
+
+// GED Assistance: un avviso al cliente col titolo nostro (message_box qui sotto si intitola «RustDesk Output» e
+// aggiunge una riga in inglese).
+pub fn ged_avviso(text: &str) {
+    let text = text
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect::<Vec<u16>>();
+    let caption = "GED Assistance"
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect::<Vec<u16>>();
+    unsafe {
+        MessageBoxW(
+            std::ptr::null_mut(),
+            text.as_ptr(),
+            caption.as_ptr(),
+            MB_OK | winapi::um::winuser::MB_ICONWARNING,
+        )
+    };
 }
 
 pub fn message_box(text: &str) {

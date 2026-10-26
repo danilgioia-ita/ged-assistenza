@@ -1568,6 +1568,11 @@ class RustdeskImpl {
     throw UnimplementedError("mainSetShareRdp");
   }
 
+  bool mainGedLog(
+      {required String livello, required String messaggio, dynamic hint}) {
+    return true;
+  }
+
   bool mainGotoInstall({dynamic hint}) {
     throw UnimplementedError("mainGotoInstall");
   }

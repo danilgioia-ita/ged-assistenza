@@ -99,7 +99,16 @@ pub fn get_id() -> String {
 
 #[inline]
 pub fn goto_install() {
-    allow_err!(crate::run_me(vec!["--install"]));
+    // GED Assistance: il registro dei passi dell'installazione (prova del 26/10: «Installa» chiudeva la finestra e
+    // non succedeva niente, e allow_err! scriveva l'errore solo come debug, senza dire di quale passo).
+    match crate::run_me(vec!["--install"]) {
+        Ok(child) => log::info!(
+            "GED installazione: aperta la pagina d'installazione (processo {}, da {:?})",
+            child.id(),
+            std::env::current_exe().ok()
+        ),
+        Err(err) => log::error!("GED installazione: la pagina d'installazione non si apre: {err:?}"),
+    }
     std::process::exit(0);
 }
 
@@ -107,9 +116,26 @@ pub fn goto_install() {
 pub fn install_me(_options: String, _path: String, _silent: bool, _debug: bool) {
     #[cfg(windows)]
     std::thread::spawn(move || {
-        allow_err!(crate::platform::windows::install_me(
-            &_options, _path, _silent, _debug
-        ));
+        log::info!(
+            "GED installazione: inizio (opzioni «{}», cartella «{}», silenziosa {})",
+            _options.trim(),
+            _path,
+            _silent
+        );
+        match crate::platform::windows::install_me(&_options, _path, _silent, _debug) {
+            Ok(()) => log::info!("GED installazione: finita senza errori"),
+            Err(err) => {
+                log::error!("GED installazione: NON riuscita: {err:?}");
+                // Prima la finestra si chiudeva e basta: il cliente (e il tecnico al telefono) non sapeva che
+                // l'installazione non era avvenuta. Ora lo dice, con la causa da leggere al tecnico.
+                if !_silent {
+                    crate::platform::windows::ged_avviso(&format!(
+                        "GED Assistance non è stato installato.\n\nCausa: {err}\n\nSe Windows ha chiesto una password di amministratore, serve quella di un utente amministratore di questo computer.\n\nIl dettaglio è nel registro: {}",
+                        hbb_common::config::Config::log_path().join("install").display()
+                    ));
+                }
+            }
+        }
         std::process::exit(0);
     });
 }
