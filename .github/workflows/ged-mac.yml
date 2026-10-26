@@ -238,11 +238,14 @@ jobs:
           # L'icona e' gia' la nostra, ma la cartella e il nome nel Finder dicevano «RustDesk». Si cambiano PRIMA di
           # firmare (la firma copre Info.plist). La versione cliente ha il passo suo, qui sotto: installa un servizio e
           # deve rinominare anche l'eseguibile e il bundle id.
+          # «Tecnico» nel nome (Danilo, 26/10): la versione cliente si chiama «GED Assistance.app» e sullo stesso Mac le
+          # due si sovrascriverebbero in Applicazioni.
           R=./flutter/build/macos/Build/Products/Release
-          /usr/libexec/PlistBuddy -c "Set :CFBundleName GED Assistance" "$R/RustDesk.app/Contents/Info.plist"
-          /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string GED Assistance" "$R/RustDesk.app/Contents/Info.plist"
-          mv "$R/RustDesk.app" "$R/GED Assistance.app"
-          echo "GED_APP=GED Assistance.app" >> "$GITHUB_ENV"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleName GED Assistance Tecnico" "$R/RustDesk.app/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string GED Assistance Tecnico" "$R/RustDesk.app/Contents/Info.plist"
+          mv "$R/RustDesk.app" "$R/GED Assistance Tecnico.app"
+          echo "GED_APP=GED Assistance Tecnico.app" >> "$GITHUB_ENV"
+          echo "GED_VOLNAME=GED Assistance Tecnico" >> "$GITHUB_ENV"
 
       - name: Nome GED Assistance ovunque (versione cliente)
         if: inputs.variante == 'cliente'
@@ -313,7 +316,7 @@ jobs:
           CREATE_DMG="$(command -v create-dmg)"
           CREATE_DMG="$(readlink -f "$CREATE_DMG")"
           sed -i -e 's/MAXIMUM_UNMOUNTING_ATTEMPTS=3/MAXIMUM_UNMOUNTING_ATTEMPTS=7/' "$CREATE_DMG"
-          create-dmg --volname "GED Assistance" --icon "${GED_APP:-RustDesk.app}" 200 190 --hide-extension "${GED_APP:-RustDesk.app}" --window-size 800 400 --app-drop-link 600 185 rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg "./flutter/build/macos/Build/Products/Release/${GED_APP:-RustDesk.app}"
+          create-dmg --volname "${GED_VOLNAME:-GED Assistance}" --icon "${GED_APP:-RustDesk.app}" 200 190 --hide-extension "${GED_APP:-RustDesk.app}" --window-size 800 400 --app-drop-link 600 185 rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg "./flutter/build/macos/Build/Products/Release/${GED_APP:-RustDesk.app}"
 
       - name: Firma e notarizzazione del .dmg
         if: env.GED_FIRMA_MAC == 'si' && env.UPLOAD_ARTIFACT == 'true'
