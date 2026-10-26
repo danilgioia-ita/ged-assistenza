@@ -17,9 +17,14 @@ on:
         default: 'cliente'
         type: choice
         options: [cliente, tecnico]
+  # PROVVISORIO: GitHub avvia a mano solo i flussi presenti sul ramo predefinito (ged), che qui non si tocca.
+  # Questo avvio, limitato al ramo ged-win7 e a questo file, serve solo alle prove e si toglie dopo.
+  push:
+    branches: [ged-win7]
+    paths: ['.github/workflows/ged-windows7.yml']
 
 env:
-  GED_VARIANTE: "${{ inputs.variante }}"
+  GED_VARIANTE: "${{ inputs.variante || 'cliente' }}"
   LLVM_VERSION: "15.0.6"
   VERSION: "1.5.0"
   VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
@@ -63,7 +68,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
-          prefix-key: windows-2022-sciter-ged-${{ inputs.variante }}
+          prefix-key: windows-2022-sciter-ged-${{ inputs.variante || 'cliente' }}
 
       - name: Setup vcpkg with Github Actions binary cache
         uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11
@@ -126,6 +131,6 @@ jobs:
       - name: L'exe di GED Assistance per Windows 7 come artefatto del giro
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ged-assistance-${{ inputs.variante }}-windows7-x86
+          name: ged-assistance-${{ inputs.variante || 'cliente' }}-windows7-x86
           path: ./SignOutput/GED-Assistance-*.exe
           retention-days: 14
