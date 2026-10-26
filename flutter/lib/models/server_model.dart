@@ -8,6 +8,7 @@ import 'package:flutter_hbb/mobile/pages/settings_page.dart';
 import 'package:flutter_hbb/models/chat_model.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -452,6 +453,75 @@ class ServerModel with ChangeNotifier {
     if (isAndroid) {
       androidUpdatekeepScreenOn();
     }
+    // GED Assistance: senza await, apposta — l'avviso non deve mai ritardare ne' fermare l'assistenza.
+    gedAvvisaApertura();
+  }
+
+  // GED Assistance (decisione di Danilo, 26/10): solo la versione CLIENTE avvisa il CRM che l'assistenza si e'
+  // aperta, cosi' in ufficio si sa quale ID cercare senza farselo dettare. Una chiamata per avvio, 5 secondi al
+  // massimo, ogni errore ignorato: se il CRM non risponde (o la rotta non c'e' ancora) il cliente non se ne accorge.
+  // Niente segreti: l'app e' pubblica, quindi la rotta non deve fidarsi di quello che riceve.
+  static const String _kGedAvvisoUrl =
+      'https://crm.gedservice.it/api/assistenza/aperta';
+  DateTime? _gedUltimoAvviso;
+
+  void gedAvvisaApertura() {
+    if (!bind.isIncomingOnly() || isWeb) return;
+    final adesso = DateTime.now();
+    // Su Android startService puo' ripassare a un passo di distanza (permesso di registrazione dello schermo):
+    // e' lo stesso avvio, non se ne manda un secondo.
+    if (_gedUltimoAvviso != null &&
+        adesso.difference(_gedUltimoAvviso!) < const Duration(seconds: 30)) {
+      return;
+    }
+    _gedUltimoAvviso = adesso;
+    () async {
+      try {
+        var id = await bind.mainGetMyId();
+        if (id.isEmpty) {
+          // All'avvio l'ID puo' non essere ancora pronto: si riprova una volta sola.
+          await Future.delayed(const Duration(seconds: 5));
+          id = await bind.mainGetMyId();
+        }
+        if (id.isEmpty) return;
+        var nome = '';
+        var os = '';
+        try {
+          final info = jsonDecode(bind.mainGetLoginDeviceInfo());
+          if (info is Map) {
+            nome = (info['name'] ?? '').toString();
+            os = (info['os'] ?? '').toString();
+          }
+        } catch (_) {}
+        final corpo = jsonEncode({
+          'id': id,
+          'dispositivo': {'nome': nome, 'os': os},
+          'versione': await bind.mainGetVersion(),
+          'piattaforma': isAndroid
+              ? 'android'
+              : isWindows
+                  ? 'windows'
+                  : isMacOS
+                      ? 'macos'
+                      : isLinux
+                          ? 'linux'
+                          : 'altro',
+        });
+        // Un client proprio e chiuso alla fine: allo scadere dei 5 secondi la connessione si chiude davvero,
+        // non resta appesa in fondo.
+        final client = http.Client();
+        try {
+          await client
+              .post(Uri.parse(_kGedAvvisoUrl),
+                  headers: {'Content-Type': 'application/json'}, body: corpo)
+              .timeout(const Duration(seconds: 5));
+        } finally {
+          client.close();
+        }
+      } catch (_) {
+        // ignorato apposta: vedi sopra
+      }
+    }();
   }
 
   /// Stop the screen sharing service.
