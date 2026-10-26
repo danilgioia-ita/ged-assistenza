@@ -243,6 +243,13 @@ jobs:
           R=./flutter/build/macos/Build/Products/Release
           /usr/libexec/PlistBuddy -c "Set :CFBundleName GED Assistance Tecnico" "$R/RustDesk.app/Contents/Info.plist"
           /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string GED Assistance Tecnico" "$R/RustDesk.app/Contents/Info.plist"
+          # Bundle id nostro (Danilo, 26/10): con com.carriez.rustdesk, lo stesso del RustDesk ufficiale, macOS apriva i
+          # link rustdesk://<id> della rubrica del CRM nel RustDesk ufficiale. Lo schema dei link resta «rustdesk»
+          # (il CRM genera rustdesk://<id>). Il tecnico e' in sola uscita e non installa servizi: il bundle id lo usa
+          # solo la riscrittura dei plist dei servizi (get_bundle_id in src/platform/macos.rs, che lo legge a runtime);
+          # configurazione e preferenze vanno per ORG + APP_NAME, non per bundle id.
+          /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier it.gedservice.assistenza.tecnico" "$R/RustDesk.app/Contents/Info.plist"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$R/RustDesk.app/Contents/Info.plist")" = "it.gedservice.assistenza.tecnico"
           mv "$R/RustDesk.app" "$R/GED Assistance Tecnico.app"
           echo "GED_APP=GED Assistance Tecnico.app" >> "$GITHUB_ENV"
           echo "GED_VOLNAME=GED Assistance Tecnico" >> "$GITHUB_ENV"
