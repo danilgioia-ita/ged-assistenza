@@ -2846,6 +2846,11 @@ fn ged_builtin() -> HashMap<String, String> {
     if ged_is_cliente() {
         m.insert("hide-network-settings".to_owned(), "Y".to_owned());
         m.insert("hide-remote-printer-settings".to_owned(), "Y".to_owned());
+    } else {
+        // Versione TECNICO (Danilo, 26/10): al cliente, nella finestra «Accetta/Rifiuta» e nella sessione, compare
+        // chi si collega — di serie e' l'utente del computer del tecnico (crate::username() in src/client.rs,
+        // LoginRequest.my_name). Deve leggere «GED Service»: l'opzione builtin display-name ha la precedenza.
+        m.insert("display-name".to_owned(), "GED Service".to_owned());
     }
     m
 }
