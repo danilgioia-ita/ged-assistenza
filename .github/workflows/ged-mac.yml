@@ -236,13 +236,39 @@ jobs:
         if: inputs.variante == 'tecnico'
         run: |
           # L'icona e' gia' la nostra, ma la cartella e il nome nel Finder dicevano «RustDesk». Si cambiano PRIMA di
-          # firmare (la firma copre Info.plist). Solo per il tecnico: la versione cliente installa un servizio i cui
-          # percorsi (/Applications/RustDesk.app in src/platform/privileges_scripts) sono scritti nel codice.
+          # firmare (la firma copre Info.plist). La versione cliente ha il passo suo, qui sotto: installa un servizio e
+          # deve rinominare anche l'eseguibile e il bundle id.
           R=./flutter/build/macos/Build/Products/Release
           /usr/libexec/PlistBuddy -c "Set :CFBundleName GED Assistance" "$R/RustDesk.app/Contents/Info.plist"
           /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string GED Assistance" "$R/RustDesk.app/Contents/Info.plist"
           mv "$R/RustDesk.app" "$R/GED Assistance.app"
           echo "GED_APP=GED Assistance.app" >> "$GITHUB_ENV"
+
+      - name: Nome GED Assistance ovunque (versione cliente)
+        if: inputs.variante == 'cliente'
+        run: |
+          # Il cliente deve vedere «GED Assistance» nel Finder, nel Dock e nelle richieste di permesso del Mac
+          # (Registrazione schermo, Accessibilita'). Qui non basta il nome nel Finder come per il tecnico: il codice
+          # (APP_NAME = «GED Assistance») cerca /Applications/GED Assistance.app/Contents/MacOS/GED Assistance — per
+          # i plist del servizio e per riconoscere il proprio processo --server sul canale IPC (src/ipc/auth.rs) —
+          # quindi si rinominano anche l'eseguibile e CFBundleExecutable. Il bundle id e' il nostro: i permessi del
+          # cliente restano legati a GED Service e non si confondono con un RustDesk gia' installato.
+          # Tutto PRIMA di firmare: la firma copre Info.plist e l'eseguibile.
+          set -euo pipefail
+          R=./flutter/build/macos/Build/Products/Release
+          P="$R/RustDesk.app/Contents/Info.plist"
+          test -x "$R/RustDesk.app/Contents/MacOS/RustDesk"
+          test -x "$R/RustDesk.app/Contents/MacOS/service"
+          mv "$R/RustDesk.app/Contents/MacOS/RustDesk" "$R/RustDesk.app/Contents/MacOS/GED Assistance"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable GED Assistance" "$P"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleName GED Assistance" "$P"
+          /usr/libexec/PlistBuddy -c "Delete :CFBundleDisplayName" "$P" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string GED Assistance" "$P"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier it.gedservice.assistenza" "$P"
+          mv "$R/RustDesk.app" "$R/GED Assistance.app"
+          echo "GED_APP=GED Assistance.app" >> "$GITHUB_ENV"
+          ls -la "$R/GED Assistance.app/Contents/MacOS"
+          /usr/libexec/PlistBuddy -c "Print" "$R/GED Assistance.app/Contents/Info.plist" | grep -E "CFBundle(Executable|Name|DisplayName|Identifier) "
 
       - name: Firma Developer ID dell'app (GED Service)
         if: env.GED_FIRMA_MAC == 'si'
