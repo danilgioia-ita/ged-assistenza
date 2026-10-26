@@ -495,7 +495,8 @@ class ServerModel with ChangeNotifier {
         } catch (_) {}
         final corpo = jsonEncode({
           'id': id,
-          'dispositivo': {'nome': nome, 'os': os},
+          // `name`, non `nome`: e' il campo che legge il CRM (AvvisoDiApertura, 3.100.0 gia' online).
+          'dispositivo': {'name': nome, 'os': os},
           'versione': await bind.mainGetVersion(),
           'piattaforma': isAndroid
               ? 'android'
