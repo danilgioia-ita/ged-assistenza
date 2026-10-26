@@ -1069,10 +1069,15 @@ showGedAccessibilityConsent(FFI ffi) {
               'Puoi toglierlo quando vuoi: con «Termina l’assistenza», oppure da Impostazioni › Accessibilità › GED Assistance.',
               style: base),
           InkWell(
-            onTap: () =>
-                launchUrl(Uri.parse('https://www.gedservice.it/privacy/')),
+            // try/catch: se non c'e' un browser l'errore non deve restare asincrono e non gestito.
+            onTap: () async {
+              try {
+                await launchUrl(Uri.parse('https://www.gedservice.it/privacy/'),
+                    mode: LaunchMode.externalApplication);
+              } catch (_) {}
+            },
             child: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
+              padding: EdgeInsets.symmetric(vertical: 14),
               child: Text('Informativa sulla privacy',
                   style: TextStyle(
                       fontSize: 15,
@@ -1125,8 +1130,11 @@ showGedAccessibilityConsent(FFI ffi) {
 
     // CustomAlertDialog e' gia' scorrevole (su un telefono piccolo la schermata e' piu' alta dello schermo). Fondo
     // bianco proprio: i colori approvati sono pensati per il chiaro e il tema scuro li renderebbe illeggibili.
+    // key: passando da consenso a guida lo scorrimento riparte dall'alto, il titolo della guida resta in vista.
+    // Material (non Container) cosi' l'effetto del tocco di InkWell e dei tasti resta visibile sul bianco.
     return CustomAlertDialog(
-      content: Container(color: Colors.white, child: contenuto),
+      key: ValueKey(guida),
+      content: Material(color: Colors.white, child: contenuto),
       onCancel: close,
     );
   });
