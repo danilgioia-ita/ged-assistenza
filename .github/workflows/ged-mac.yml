@@ -1,8 +1,14 @@
 name: GED Assistance — Mac
 
-# GED ASSISTANCE (25 ottobre 2026). Ricavato da flutter-build.yml di RustDesk 1.5.0: Mac Apple Silicon (aarch64), .dmg non firmato (la firma Apple Developer ID si aggiunge con la chiave di notarizzazione).
+# GED ASSISTANCE (25 ottobre 2026). Ricavato da flutter-build.yml di RustDesk 1.5.0: Mac Apple Silicon (aarch64).
 # Parte SOLO a mano; «variante» sceglie la versione (cliente = solo ricevere, tecnico = solo collegarsi, vedi
-# ged_variante() in libs/hbb_common/src/config.rs). Niente firma qui: i file escono come artefatti del giro.
+# ged_variante() in libs/hbb_common/src/config.rs). I file escono come artefatti del giro.
+#
+# FIRMA E NOTARIZZAZIONE (26 ottobre 2026). Senza, il Mac apre il .dmg solo col tasto destro e un avviso che spaventa.
+# Si fanno qui quando ci sono i segreti: APPLE_DEVELOPER_ID_APP_JSON (il certificato Developer ID Application del
+# team X728M3V35H, consegnato da M3GAN col Face ID: json {p12_base64, password, identita}) e i tre APPLE_NOTARY_*
+# (chiave API di App Store Connect, da ops/firma-apple/chiave-notarizzazione.sh). Senza segreti il .dmg esce
+# non firmato come prima. I passi di firma di RustDesk (MACOS_P12_BASE64, rcodesign) restano spenti: non li usiamo.
 
 on:
   workflow_dispatch:
@@ -50,6 +56,8 @@ env:
   MACOS_P12_BASE64: "${{ secrets.MACOS_P12_BASE64 }}"
   UPLOAD_ARTIFACT: "true"
   SIGN_BASE_URL: "${{ secrets.SIGN_BASE_URL }}-2"
+  # Solo «si»/«no»: il valore dei segreti non entra nell'ambiente di tutti i passi, solo in quelli che firmano.
+  GED_FIRMA_MAC: "${{ secrets.APPLE_DEVELOPER_ID_APP_JSON != '' && secrets.APPLE_NOTARY_KEY_P8_BASE64 != '' && 'si' || 'no' }}"
 
 jobs:
   generate-bridge:
@@ -224,13 +232,83 @@ jobs:
           fi
           ./build.py --flutter --hwcodec --unix-file-copy-paste ${{ matrix.job.extra-build-args }}
 
+      - name: Nome GED Assistance nel Finder (versione tecnico)
+        if: inputs.variante == 'tecnico'
+        run: |
+          # L'icona e' gia' la nostra, ma la cartella e il nome nel Finder dicevano «RustDesk». Si cambiano PRIMA di
+          # firmare (la firma copre Info.plist). Solo per il tecnico: la versione cliente installa un servizio i cui
+          # percorsi (/Applications/RustDesk.app in src/platform/privileges_scripts) sono scritti nel codice.
+          R=./flutter/build/macos/Build/Products/Release
+          /usr/libexec/PlistBuddy -c "Set :CFBundleName GED Assistance" "$R/RustDesk.app/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string GED Assistance" "$R/RustDesk.app/Contents/Info.plist"
+          mv "$R/RustDesk.app" "$R/GED Assistance.app"
+          echo "GED_APP=GED Assistance.app" >> "$GITHUB_ENV"
+
+      - name: Firma Developer ID dell'app (GED Service)
+        if: env.GED_FIRMA_MAC == 'si'
+        env:
+          CERT_JSON: ${{ secrets.APPLE_DEVELOPER_ID_APP_JSON }}
+        run: |
+          set -euo pipefail
+          LAV="$RUNNER_TEMP/firma"; mkdir -p "$LAV"; chmod 700 "$LAV"
+          KC="$LAV/ged.keychain-db"; KPW="$(openssl rand -hex 16)"
+          printf '%s' "$CERT_JSON" | jq -r .p12_base64 | base64 --decode > "$LAV/app.p12"
+          security create-keychain -p "$KPW" "$KC"
+          security set-keychain-settings -lut 3600 "$KC"
+          security unlock-keychain -p "$KPW" "$KC"
+          security import "$LAV/app.p12" -k "$KC" -P "$(printf '%s' "$CERT_JSON" | jq -r .password)" -T /usr/bin/codesign
+          rm -f "$LAV/app.p12"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KPW" "$KC" >/dev/null
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          IDENTITA="$(printf '%s' "$CERT_JSON" | jq -r .identita)"
+          echo "GED_IDENTITA=$IDENTITA" >> "$GITHUB_ENV"
+          echo "GED_KEYCHAIN=$KC" >> "$GITHUB_ENV"
+          APP="./flutter/build/macos/Build/Products/Release/${GED_APP:-RustDesk.app}"
+          # --preserve-metadata=entitlements: ri-firmando si perderebbero i permessi che flutter ha messo nell'app
+          # (microfono, rete); --options runtime e --timestamp sono quelli che Apple chiede per notarizzare.
+          codesign --force --deep --strict --options runtime --timestamp --preserve-metadata=entitlements \
+            --keychain "$KC" -s "$IDENTITA" "$APP" -v
+          codesign --verify --deep --strict -vv "$APP"
+
       - name: create unsigned dmg
         if: env.UPLOAD_ARTIFACT == 'true'
         run: |
           CREATE_DMG="$(command -v create-dmg)"
           CREATE_DMG="$(readlink -f "$CREATE_DMG")"
           sed -i -e 's/MAXIMUM_UNMOUNTING_ATTEMPTS=3/MAXIMUM_UNMOUNTING_ATTEMPTS=7/' "$CREATE_DMG"
-          create-dmg --icon "RustDesk.app" 200 190 --hide-extension "RustDesk.app" --window-size 800 400 --app-drop-link 600 185 rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg ./flutter/build/macos/Build/Products/Release/RustDesk.app
+          create-dmg --volname "GED Assistance" --icon "${GED_APP:-RustDesk.app}" 200 190 --hide-extension "${GED_APP:-RustDesk.app}" --window-size 800 400 --app-drop-link 600 185 rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg "./flutter/build/macos/Build/Products/Release/${GED_APP:-RustDesk.app}"
+
+      - name: Firma e notarizzazione del .dmg
+        if: env.GED_FIRMA_MAC == 'si' && env.UPLOAD_ARTIFACT == 'true'
+        env:
+          NOTARY_P8_B64: ${{ secrets.APPLE_NOTARY_KEY_P8_BASE64 }}
+          NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
+          NOTARY_ISSUER: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          DMG="rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg"
+          LAV="$RUNNER_TEMP/firma"
+          codesign --force --timestamp --keychain "$GED_KEYCHAIN" -s "$GED_IDENTITA" "$DMG"
+          printf '%s' "$NOTARY_P8_B64" | base64 --decode > "$LAV/AuthKey_$NOTARY_KEY_ID.p8"
+          xcrun notarytool submit "$DMG" --key "$LAV/AuthKey_$NOTARY_KEY_ID.p8" --key-id "$NOTARY_KEY_ID" \
+            --issuer "$NOTARY_ISSUER" --wait --timeout 40m --output-format json > "$LAV/esito.json" || true
+          cat "$LAV/esito.json"; echo
+          STATO="$(jq -r '.status // empty' "$LAV/esito.json")"
+          if [ "$STATO" != "Accepted" ]; then
+            # Il motivo del rifiuto Apple lo scrive solo nel registro della richiesta: senza, si indovina.
+            ID="$(jq -r '.id // empty' "$LAV/esito.json")"
+            [ -n "$ID" ] && xcrun notarytool log "$ID" --key "$LAV/AuthKey_$NOTARY_KEY_ID.p8" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER" || true
+            echo "::error::notarizzazione non accettata (stato: ${STATO:-nessuno})"; exit 1
+          fi
+          xcrun stapler staple "$DMG"
+          xcrun stapler validate "$DMG"
+          spctl -a -t open --context context:primary-signature -vv "$DMG"
+
+      - name: Via chiavi e portachiavi
+        if: always() && env.GED_FIRMA_MAC == 'si'
+        run: |
+          [ -n "${GED_KEYCHAIN:-}" ] && security delete-keychain "$GED_KEYCHAIN" || true
+          rm -rf "$RUNNER_TEMP/firma"
 
       - name: Upload unsigned macOS app
         if: env.UPLOAD_ARTIFACT == 'true'
