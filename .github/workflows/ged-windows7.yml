@@ -6,7 +6,8 @@ name: GED Assistance — Windows 7
 # Un exe a 32 bit gira sia su Windows 7 a 32 bit sia su Windows 7 a 64 bit.
 # Server, chiave, nome «GED Assistance» e variante (cliente = solo ricevere) stanno nel codice Rust
 # (libs/hbb_common/src/config.rs), quindi valgono anche qui; l'icona Cuffia A e' res/icon.ico.
-# Parte SOLO a mano. Il file esce come artefatto del giro.
+# Parte SOLO a mano. Il file esce come artefatto del giro. Il tasto «Run workflow» compare quando il file
+# arriva sul ramo predefinito (ged): GitHub avvia a mano solo i flussi che stanno li'.
 
 on:
   workflow_dispatch:
@@ -17,11 +18,6 @@ on:
         default: 'cliente'
         type: choice
         options: [cliente, tecnico]
-  # PROVVISORIO: GitHub avvia a mano solo i flussi presenti sul ramo predefinito (ged), che qui non si tocca.
-  # Questo avvio, limitato al ramo ged-win7 e a questo file, serve solo alle prove e si toglie dopo.
-  push:
-    branches: [ged-win7]
-    paths: ['.github/workflows/ged-windows7.yml']
 
 env:
   GED_VARIANTE: "${{ inputs.variante || 'cliente' }}"
