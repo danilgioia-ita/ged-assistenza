@@ -482,7 +482,8 @@ class _GeneralState extends State<_General> {
   Widget other() {
     final incomingOnly = bind.isIncomingOnly();
     final outgoingOnly = bind.isOutgoingOnly();
-    final showAutoUpdate = (isWindows && bind.mainIsInstalled()) ||
+    // GED Assistance: la casella non compare mai nelle nostre versioni (scaricherebbe il RustDesk ufficiale).
+    final showAutoUpdate = (isWindows && bind.mainIsInstalled() && !bind.isCustomClient()) ||
     (isMacOS && bind.mainIsInstalled() && bind.mainIsInstalledDaemon(prompt: false) && !bind.isCustomClient());
     final children = <Widget>[
       if (!isWeb && !incomingOnly)

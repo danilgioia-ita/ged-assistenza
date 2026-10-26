@@ -1121,8 +1121,10 @@ pub fn main_get_app_name() -> String {
     get_app_name()
 }
 
+// GED Assistance: la versione sync fa i titoli delle finestre e i testi, quindi il nome da leggere; la versione
+// asincrona qui sopra resta il nome vero perche' la pagina d'installazione ci compone la cartella.
 pub fn main_get_app_name_sync() -> SyncReturn<String> {
-    SyncReturn(get_app_name())
+    SyncReturn(crate::get_app_display_name())
 }
 
 pub fn main_uri_prefix_sync() -> SyncReturn<String> {

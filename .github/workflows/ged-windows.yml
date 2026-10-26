@@ -326,10 +326,28 @@ jobs:
           mkdir -p ./SignOutput
           mv ./target/release/rustdesk-portable-packer.exe ./SignOutput/rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.exe
 
-      - name: L'exe di GED Assistance come artefatto del giro
+      # GED Assistance (26/10): DUE file dallo stesso binario, cambia solo il nome — ed e' il nome a decidere.
+      #  - ged-assistance-windows.exe           portatile, per l'assistenza al volo (non installa niente);
+      #  - ged-assistance-windows-installa.exe  per il cliente con contratto: aprendolo parte da sola la pagina
+      #    d'installazione (is_ged_setup_file_name in src/common.rs e libs/portable/src/main.rs).
+      # Per la versione tecnico i nomi dicono «tecnico», perche' i due file non si confondano scaricandoli.
+      - name: I due exe di GED Assistance (portatile e installatore)
+        shell: bash
+        run: |
+          set -euo pipefail
+          src=$(ls ./SignOutput/rustdesk-*.exe | head -n1)
+          mkdir -p ./GedOutput
+          if [ "${{ inputs.variante }}" = "tecnico" ]; then base=ged-assistance-tecnico-windows; else base=ged-assistance-windows; fi
+          cp "$src" "./GedOutput/${base}.exe"
+          cp "$src" "./GedOutput/${base}-installa.exe"
+          ls -l ./GedOutput
+          sha256sum ./GedOutput/*.exe
+
+      - name: Gli exe di GED Assistance come artefatto del giro
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ged-assistance-${{ inputs.variante }}-windows-x86_64
-          path: ./SignOutput/rustdesk-*.exe
+          path: ./GedOutput/*.exe
+          if-no-files-found: error
           retention-days: 14
 

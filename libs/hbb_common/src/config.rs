@@ -70,12 +70,16 @@ lazy_static::lazy_static! {
     pub static ref PROD_RENDEZVOUS_SERVER: RwLock<String> = RwLock::new("".to_owned());
     pub static ref EXE_RENDEZVOUS_SERVER: RwLock<String> = Default::default();
     // GED Assistance: il nome dell'app (titoli, finestre). RustDesk lo usa anche per riconoscere un «client personalizzato».
-    pub static ref APP_NAME: RwLock<String> = RwLock::new("GED Assistance".to_owned());
+    // Su Windows si chiama «GED-Assistance», col trattino: RustDesk ci costruisce gli script d'installazione (servizio,
+    // registro, firewall, taskkill) e rifiuta un nome che non sia [a-zA-Z0-9-]+ (validate_install_app_name in
+    // windows.rs) — con lo spazio l'installazione si fermava prima di cominciare. Dove il cliente lo legge (titoli,
+    // testi tradotti, «App installate») si mostra «GED Assistance»: vedi get_app_display_name() in src/common.rs.
+    pub static ref APP_NAME: RwLock<String> = RwLock::new(if cfg!(windows) { "GED-Assistance" } else { "GED Assistance" }.to_owned());
     static ref KEY_PAIR: Mutex<Option<KeyPair>> = Default::default();
     static ref USER_DEFAULT_CONFIG: RwLock<(UserDefaultConfig, Instant)> = RwLock::new((UserDefaultConfig::load(), Instant::now()));
     pub static ref NEW_STORED_PEER_CONFIG: Mutex<HashSet<String>> = Default::default();
     pub static ref DEFAULT_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
-    pub static ref OVERWRITE_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
+    pub static ref OVERWRITE_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(ged_overwrite());
     pub static ref DEFAULT_DISPLAY_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
     pub static ref OVERWRITE_DISPLAY_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
     pub static ref DEFAULT_LOCAL_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
@@ -84,7 +88,7 @@ lazy_static::lazy_static! {
     // «solo ricevere» (si fa assistere: niente campo per collegarsi ad altri) e quella del TECNICO «solo collegarsi»
     // (i nostri Mac e PC). E' la stessa leva («conn-type») dei client personalizzati di RustDesk.
     pub static ref HARD_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(ged_variante());
-    pub static ref BUILTIN_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
+    pub static ref BUILTIN_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(ged_builtin());
 }
 
 #[cfg(target_os = "android")]
@@ -2778,6 +2782,39 @@ fn ged_variante() -> HashMap<String, String> {
     let mut m = HashMap::new();
     let tipo = if option_env!("GED_VARIANTE") == Some("tecnico") { "outgoing" } else { "incoming" };
     m.insert("conn-type".to_owned(), tipo.to_owned());
+    if tipo == "incoming" {
+        // Versione cliente (decisione di Danilo, 26/10): niente scheda Account (accesso a un account RustDesk).
+        m.insert("disable-account".to_owned(), "Y".to_owned());
+    }
+    m
+}
+
+#[inline]
+fn ged_is_cliente() -> bool {
+    option_env!("GED_VARIANTE") != Some("tecnico")
+}
+
+// GED Assistance: opzioni bloccate (il cliente non le puo' cambiare, e quello che c'e' nel suo file non conta).
+#[inline]
+fn ged_overwrite() -> HashMap<String, String> {
+    let mut m = HashMap::new();
+    if ged_is_cliente() {
+        // L'aggiornamento automatico scaricherebbe il RustDesk UFFICIALE da github.com/rustdesk e lo installerebbe al
+        // posto nostro: via server di GED Service, chiave, nome e blocchi. Spento per sempre (vedi anche updater.rs).
+        m.insert("allow-auto-update".to_owned(), "N".to_owned());
+    }
+    m
+}
+
+// GED Assistance: le schede delle impostazioni che il cliente non deve vedere. Resta «Sicurezza», che serve al
+// tecnico per mettere la password permanente quando lascia installato.
+#[inline]
+fn ged_builtin() -> HashMap<String, String> {
+    let mut m = HashMap::new();
+    if ged_is_cliente() {
+        m.insert("hide-network-settings".to_owned(), "Y".to_owned());
+        m.insert("hide-remote-printer-settings".to_owned(), "Y".to_owned());
+    }
     m
 }
 
