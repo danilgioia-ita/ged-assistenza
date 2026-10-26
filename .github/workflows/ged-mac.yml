@@ -268,6 +268,17 @@ jobs:
           # (microfono, rete); --options runtime e --timestamp sono quelli che Apple chiede per notarizzare.
           codesign --force --deep --strict --options runtime --timestamp --preserve-metadata=entitlements \
             --keychain "$KC" -s "$IDENTITA" "$APP" -v
+          # VIA IL PERMESSO DA SVILUPPO. Il 26/10 Apple ha rifiutato il primo .dmg per un solo motivo: l'eseguibile
+          # chiedeva com.apple.security.get-task-allow (lo aggiunge la firma ad-hoc di Xcode, non Release.entitlements).
+          # Lo si toglie dai permessi preservati e si ri-firma il pacchetto principale; se resta, ci si ferma qui
+          # invece di aspettare il rifiuto di Apple.
+          codesign -d --entitlements - --xml "$APP" > "$LAV/permessi.plist"
+          /usr/libexec/PlistBuddy -c "Delete :com.apple.security.get-task-allow" "$LAV/permessi.plist" 2>/dev/null || true
+          codesign --force --strict --options runtime --timestamp --entitlements "$LAV/permessi.plist" \
+            --keychain "$KC" -s "$IDENTITA" "$APP" -v
+          if codesign -d --entitlements - --xml "$APP" 2>/dev/null | grep -q get-task-allow; then
+            echo "::error::l'app chiede ancora get-task-allow: Apple la rifiuterebbe"; exit 1
+          fi
           codesign --verify --deep --strict -vv "$APP"
 
       - name: create unsigned dmg
