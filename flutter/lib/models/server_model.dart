@@ -8,6 +8,7 @@ import 'package:flutter_hbb/mobile/pages/settings_page.dart';
 import 'package:flutter_hbb/models/chat_model.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../common.dart';
@@ -340,7 +341,13 @@ class ServerModel with ChangeNotifier {
       if (parent.target != null) {
         /// the result of toggle-on depends on user actions in the settings page.
         /// handle result, see [ServerModel.changeStatue]
-        showInputWarnAlert(parent.target!);
+        // GED Assistance, versione cliente: prima il consenso in italiano (richiesto da Google Play per
+        // l'Accessibilita'), poi le impostazioni. Le altre varianti tengono il dialogo di RustDesk.
+        if (bind.isIncomingOnly()) {
+          showGedAccessibilityConsent(parent.target!);
+        } else {
+          showInputWarnAlert(parent.target!);
+        }
       }
     }
   }
@@ -921,6 +928,205 @@ showInputWarnAlert(FFI ffi) {
         dialogButton("Open System Setting", onPressed: submit),
       ],
       onSubmit: submit,
+      onCancel: close,
+    );
+  });
+}
+
+// GED Assistance: «prominent disclosure» che Google Play pretende PRIMA che l'app usi l'Accessibilita' (il servizio ha
+// canRetrieveWindowContent e canPerformGestures). Testi approvati da Danilo, da non cambiare. Compare OGNI volta che il
+// tocco si accende da spento, e non si ricorda: Google vuole un'azione affermativa prima di aprire le impostazioni,
+// non un consenso dato una volta e dimenticato. «No» chiude e non apre niente: il tocco resta spento.
+showGedAccessibilityConsent(FFI ffi) {
+  const blu = Color(0xFF1C5FB0);
+  const navy = Color(0xFF0B2241);
+  const grigio = Color(0xFFF2F4F8);
+  const secondario = Color(0xFFEEF1F5);
+  const secondarioTesto = Color(0xFF22344F);
+  const base = TextStyle(fontSize: 15, height: 1.4, color: navy);
+  const grassetto =
+      TextStyle(fontSize: 15, height: 1.4, color: navy, fontWeight: FontWeight.bold);
+
+  Widget riquadro(Color fondo, Color titoloColore, String titolo, Widget corpo) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+          color: fondo, borderRadius: BorderRadius.circular(10)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(titolo,
+              style: TextStyle(
+                  fontSize: 15,
+                  height: 1.4,
+                  fontWeight: FontWeight.bold,
+                  color: titoloColore)),
+          const SizedBox(height: 6),
+          corpo,
+        ],
+      ),
+    );
+  }
+
+  Widget punto(String testo) => Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('•  ', style: base),
+            Expanded(child: Text(testo, style: base)),
+          ],
+        ),
+      );
+
+  Widget tasto(String testo, VoidCallback onPressed, bool primario) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: TextButton(
+        style: TextButton.styleFrom(
+            backgroundColor: primario ? blu : secondario,
+            foregroundColor: primario ? Colors.white : secondarioTesto,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+        onPressed: onPressed,
+        child: Text(testo,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: primario ? Colors.white : secondarioTesto)),
+      ),
+    );
+  }
+
+  Widget passo(int n, String testo) => Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              decoration:
+                  const BoxDecoration(color: navy, shape: BoxShape.circle),
+              child: Text('$n',
+                  style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Text(testo, style: base)),
+          ],
+        ),
+      );
+
+  // false = schermata di consenso, true = guida alle impostazioni (dopo «Si', accetto»)
+  var guida = false;
+  ffi.dialogManager.show((setState, close, context) {
+    Widget contenuto;
+    if (!guida) {
+      contenuto = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+              'Vuoi che il tecnico possa toccare lo schermo?',
+              style: TextStyle(
+                  fontSize: 20,
+                  height: 1.3,
+                  fontWeight: FontWeight.bold,
+                  color: navy)),
+          const SizedBox(height: 10),
+          const Text(
+              'Il tecnico di GED Service potrà usare il telefono al posto tuo: toccare, scrivere e tornare indietro, come faresti tu. Così risolve prima.',
+              style: base),
+          riquadro(
+              grigio,
+              navy,
+              'Per farlo GED Assistance usa l’Accessibilità di Android. Con questo permesso l’app:',
+              Column(children: [
+                punto('esegue i tocchi e le scritte che manda il tecnico;'),
+                punto(
+                    'legge cosa c’è sullo schermo, solo per mostrarlo al tecnico e scrivere nel campo giusto.'),
+              ])),
+          riquadro(
+              const Color(0xFFE8F6EE),
+              const Color(0xFF1F5C36),
+              'Cosa non fa',
+              Column(children: [
+                punto(
+                    'non salva e non manda a nessun altro quello che c’è sul telefono;'),
+                punto('non fa niente quando l’assistenza è chiusa;'),
+                punto(
+                    'non è uno strumento per l’accessibilità: serve solo all’assistenza.'),
+              ])),
+          const SizedBox(height: 12),
+          const Text(
+              'Puoi toglierlo quando vuoi: con «Termina l’assistenza», oppure da Impostazioni › Accessibilità › GED Assistance.',
+              style: base),
+          InkWell(
+            onTap: () =>
+                launchUrl(Uri.parse('https://www.gedservice.it/privacy/')),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Text('Informativa sulla privacy',
+                  style: TextStyle(
+                      fontSize: 15,
+                      color: blu,
+                      decoration: TextDecoration.underline)),
+            ),
+          ),
+          tasto('Sì, accetto', () => setState(() => guida = true), true),
+          const SizedBox(height: 10),
+          tasto('No, il tecnico guarda soltanto', close, false),
+        ],
+      );
+    } else {
+      contenuto = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Ti apro le impostazioni del telefono',
+              style: TextStyle(
+                  fontSize: 20,
+                  height: 1.3,
+                  fontWeight: FontWeight.bold,
+                  color: navy)),
+          const SizedBox(height: 6),
+          const Text('Lì fai tre tocchi, poi torni qui da solo.',
+              style: base),
+          const SizedBox(height: 6),
+          passo(1,
+              'Tocca GED Assistance (a volte è dentro «App installate»).'),
+          passo(2, 'Accendi l’interruttore.'),
+          passo(3, 'Il telefono chiede conferma: tocca Consenti.'),
+          riquadro(
+              const Color(0xFFFDF4E3),
+              const Color(0xFF6B4600),
+              'L’interruttore è grigio?',
+              const Text(
+                  'Succede solo se l’app è stata scaricata dal sito. Vai in Impostazioni › App › GED Assistance, tocca i tre puntini in alto e scegli «Consenti impostazioni con limitazioni». Poi riprova.',
+                  style: base)),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Text('Il tecnico ti guida a voce in ogni passo.',
+                style: grassetto),
+          ),
+          tasto('Apri le impostazioni', () {
+            AndroidPermissionManager.startAction(kActionAccessibilitySettings);
+            close();
+          }, true),
+        ],
+      );
+    }
+
+    // CustomAlertDialog e' gia' scorrevole (su un telefono piccolo la schermata e' piu' alta dello schermo). Fondo
+    // bianco proprio: i colori approvati sono pensati per il chiaro e il tema scuro li renderebbe illeggibili.
+    return CustomAlertDialog(
+      content: Container(color: Colors.white, child: contenuto),
       onCancel: close,
     );
   });
