@@ -174,6 +174,14 @@ fn start_auto_update_check_(rx_msg: Receiver<UpdateMsg>) {
 }
 
 fn check_update(manually: bool) -> ResultType<()> {
+    // GED Assistance: mai l'aggiornamento di RustDesk, nemmeno chiesto a mano. Scaricherebbe il RustDesk ufficiale
+    // (github.com/rustdesk/rustdesk/releases) e lo installerebbe sopra il nostro, senza server, chiave e blocchi di
+    // GED Service. Sul Mac RustDesk lo salta gia' per i client personalizzati (check_update_as_root); qui no, e
+    // con la casella «Aggiornamento automatico» spuntata da installato partiva davvero.
+    if crate::is_custom_client() {
+        log::info!("GED Assistance: aggiornamento di RustDesk saltato (client personalizzato)");
+        return Ok(());
+    }
     // On macOS, auto-update is handled by check_update_as_root() in the service process.
     // The shared check_update() path is only used for manual update checks from the GUI.
     #[cfg(target_os = "macos")]

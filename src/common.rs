@@ -1083,6 +1083,28 @@ pub fn get_app_name() -> String {
     hbb_common::config::APP_NAME.read().unwrap().clone()
 }
 
+// GED Assistance: il nome da far LEGGERE. Su Windows APP_NAME e' «GED-Assistance» col trattino perche' gli script
+// d'installazione di RustDesk accettano solo [a-zA-Z0-9-]+ (vedi APP_NAME in libs/hbb_common/src/config.rs); al
+// cliente si mostra comunque «GED Assistance». Per cartelle, servizio, registro ed exe resta get_app_name().
+#[inline]
+pub fn get_app_display_name() -> String {
+    let name = get_app_name();
+    if name == "GED-Assistance" {
+        "GED Assistance".to_owned()
+    } else {
+        name
+    }
+}
+
+// GED Assistance: il cliente lancia l'installazione da solo scaricando «ged-assistance-windows-installa.exe»
+// (RustDesk riconosce solo «...install.exe»). Si guarda il NOME DEL FILE, non il percorso: una cartella
+// «Installazioni» non deve far partire niente. «installa (1).exe», come lo rinomina il browser quando lo si
+// scarica due volte, vale lo stesso.
+pub fn is_ged_setup_file_name(path: &str) -> bool {
+    let name = path.rsplit(|c: char| c == '\\' || c == '/').next().unwrap_or(path).to_lowercase();
+    name.ends_with(".exe") && name.contains("-installa")
+}
+
 #[inline]
 pub fn is_rustdesk() -> bool {
     hbb_common::config::APP_NAME.read().unwrap().eq("RustDesk")
@@ -1103,7 +1125,8 @@ pub fn get_full_name() -> String {
 }
 
 pub fn is_setup(name: &str) -> bool {
-    !config::is_disable_installation() && name.to_lowercase().ends_with("install.exe")
+    !config::is_disable_installation()
+        && (name.to_lowercase().ends_with("install.exe") || is_ged_setup_file_name(name))
 }
 
 pub fn get_custom_rendezvous_server(custom: String) -> String {

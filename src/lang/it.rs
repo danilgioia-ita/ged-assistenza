@@ -145,7 +145,7 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("Failed to make direct connection to remote desktop", "Impossibile connettersi direttamente al desktop remoto"),
         ("Set Password", "Imposta password"),
         ("OS Password", "Password sistema operativo"),
-        ("install_tip", "A causa del Controllo Account Utente (UAC), RustDesk potrebbe non funzionare correttamente come desktop remoto.\nPer evitare questo problema, fai clic sul tasto qui sotto per installare RustDesk a livello di sistema."),
+        ("install_tip", "Installa GED Assistance su questo computer: così il tecnico di GED Service può aiutarti anche quando non ci sei (serve il contratto)."),
         ("Click to upgrade", "Aggiorna"),
         ("Configure", "Configura"),
         ("config_acc", "Per controllare il desktop dall'esterno, devi fornire a RustDesk il permesso 'Accessibilità'."),

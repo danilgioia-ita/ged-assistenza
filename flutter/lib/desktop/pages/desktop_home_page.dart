@@ -43,6 +43,9 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   var systemError = '';
   StreamSubscription? _uniLinksSubscription;
   var svcStopped = false.obs;
+  // GED Assistance: installata + password permanente impostata = accesso senza presidio (vedi buildHelpCards).
+  final RxBool _gedPresidioAttivo = false.obs;
+  int _gedPresidioGiri = 0;
   var watchIsCanScreenRecording = false;
   var watchIsProcessTrust = false;
   var watchIsInputMonitoring = false;
@@ -460,9 +463,13 @@ class _DesktopHomePageState extends State<DesktopHomePage>
 
     if (isWindows && !bind.isDisableInstallation()) {
       if (!bind.mainIsInstalled()) {
+        // GED Assistance: il testo per il cliente in italiano qualunque sia la lingua di Windows (decisione 26/10).
         return buildInstallCard(
-            "", bind.isOutgoingOnly() ? "" : "install_tip", "Install",
-            () async {
+            "",
+            bind.isOutgoingOnly()
+                ? ""
+                : (bind.isIncomingOnly() ? kGedInstallaTip : "install_tip"),
+            bind.isIncomingOnly() ? "Installa" : "Install", () async {
           await rustDeskWinManager.closeAllSubWindows();
           bind.mainGotoInstall();
         });
@@ -472,6 +479,15 @@ class _DesktopHomePageState extends State<DesktopHomePage>
             () async {
           await rustDeskWinManager.closeAllSubWindows();
           bind.mainUpdateMe();
+        });
+      } else if (bind.isIncomingOnly() &&
+          _gedPresidioAttivo.value &&
+          !svcStopped.value) {
+        // GED Assistance: da installata, con la password permanente messa dal tecnico, il cliente deve sapere che
+        // GED Service puo' entrare anche quando lui non c'e' — e poterlo fermare da qui. «Ferma» e' lo stesso
+        // stop del servizio di RustDesk (opzione stop-service), quello di «Ferma assistenza».
+        return buildInstallCard("", kGedPresidioAttivoTip, "Ferma", () async {
+          await start_service(false);
         });
       }
     } else if (isMacOS) {
@@ -706,6 +722,20 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       if (v != svcStopped.value) {
         svcStopped.value = v;
         setState(() {});
+      }
+      // Ogni 10 secondi, non ogni secondo: la domanda passa due volte dal canale IPC col servizio, e RustDesk avverte
+      // che su Windows aprire pipe di continuo perde memoria (ui_interface.rs).
+      if (isWindows &&
+          bind.isIncomingOnly() &&
+          bind.mainIsInstalled() &&
+          (_gedPresidioGiri++ % 10) == 0) {
+        final presidio =
+            (await bind.mainGetCommon(key: "permanent-password-set")) ==
+                "true";
+        if (presidio != _gedPresidioAttivo.value) {
+          _gedPresidioAttivo.value = presidio;
+          setState(() {});
+        }
       }
       if (watchIsCanScreenRecording) {
         if (bind.mainIsCanScreenRecording(prompt: false)) {
@@ -1120,3 +1150,9 @@ void setPasswordDialog({VoidCallback? notEmptyCallback}) async {
     );
   });
 }
+
+// GED Assistance: testi della versione cliente su Windows (decisioni di Danilo, 26/10).
+const String kGedInstallaTip =
+    "Installa GED Assistance su questo computer: così il tecnico di GED Service può aiutarti anche quando non ci sei (serve il contratto).";
+const String kGedPresidioAttivoTip =
+    "Accesso senza presidio ATTIVO: GED Service può collegarsi anche quando non ci sei.";

@@ -281,7 +281,19 @@ fn main() -> Result<(), String> {
         }
         i += 1;
     }
-    let click_setup = args.is_empty() && arg_exe.to_lowercase().ends_with("install.exe");
+    // GED Assistance: anche «ged-assistance-windows-installa.exe» (l'installatore per i clienti con contratto) apre
+    // l'installazione; conta solo il nome del file, non le cartelle del percorso. Stessa regola di
+    // is_ged_setup_file_name() in src/common.rs.
+    let ged_setup = {
+        let name = arg_exe
+            .rsplit(|c: char| c == '\\' || c == '/')
+            .next()
+            .unwrap_or(arg_exe.as_str())
+            .to_lowercase();
+        name.ends_with(".exe") && name.contains("-installa")
+    };
+    let click_setup =
+        args.is_empty() && (arg_exe.to_lowercase().ends_with("install.exe") || ged_setup);
     #[cfg(windows)]
     let quick_support = args.is_empty() && win::is_quick_support_exe(&arg_exe);
     #[cfg(not(windows))]
