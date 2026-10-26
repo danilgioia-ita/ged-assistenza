@@ -1115,12 +1115,16 @@ pub fn get_uri_prefix() -> String {
     format!("{}://", get_app_name().to_lowercase())
 }
 
+// GED Assistance: il nome completo fa da etichetta dei servizi launchd e da nome dei loro plist, e il nostro nome ha
+// uno spazio. Lo spazio si sostituisce col trattino come fa directories-next per la cartella delle preferenze
+// (~/Library/Preferences/com.carriez.GED-Assistance): cosi' etichetta, plist e cartella hanno lo stesso nome, e gli
+// script dei privilegi non spezzano i percorsi. Per «RustDesk» non cambia niente.
 #[cfg(target_os = "macos")]
 pub fn get_full_name() -> String {
     format!(
         "{}.{}",
         hbb_common::config::ORG.read().unwrap(),
-        hbb_common::config::APP_NAME.read().unwrap(),
+        hbb_common::config::APP_NAME.read().unwrap().replace(' ', "-"),
     )
 }
 
