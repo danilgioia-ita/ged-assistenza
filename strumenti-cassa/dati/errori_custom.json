@@ -1,0 +1,1549 @@
+{
+ "fonte": "Custom, Protocollo fiscale 72100000001800 rev 2.00, appendice segnalazioni",
+ "display": [
+  {
+   "codice": 1,
+   "titolo": "RAM CORROTTA",
+   "testo": "Memoria RAM corrotta. Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 2,
+   "titolo": "LETTURA OROLOGIO",
+   "testo": "Errore di lettura orologio. Riavviare il misuratore fiscale. Se l’errore persiste, contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 5,
+   "titolo": "STAMPANTE SCOLLEGATA",
+   "testo": "Errore meccanismo di stampa scollegato. Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 6,
+   "titolo": "ERRORE DISCO INTERNO",
+   "testo": "Disco interno corrotto. Riavviare il misuratore fiscale. Se l’errore persiste, contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 7,
+   "titolo": "ERRORE SCRITTURA MEMORIA DI RIEPILOGO",
+   "testo": "Errore di scrittura nella memoria di riepilogo. Riavviare il misuratore fiscale. Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 9,
+   "titolo": "ERRORE TPM/CRYPTO CHIP",
+   "testo": "Errore crypto chip. Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 11,
+   "titolo": "MATRICOLA DIVERSA",
+   "testo": "Matricola letta in memoria di riepilogo è diversa dalla matricola presente nella memoria RAM. Riavviare il dispositivo. Se l’errore persiste, contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 13,
+   "titolo": "MEMORIA DI RIEPILOGO SCOLLEGATA",
+   "testo": "La memoria di riepilogo è scollegata. Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 14,
+   "titolo": "MEMORIA DI RIEPILOGO NON COMPATIBILE",
+   "testo": "La memoria di riepilogo non è compatibile. Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 17,
+   "titolo": "SCRITTURA RECORD DI FISCALIZZAZIONE",
+   "testo": "Errore di scrittura del record di fiscalizzazione. Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 19,
+   "titolo": "SCRITTURA IVA IN MEMORIA DI RIEPILOGO",
+   "testo": "Errore di scrittura dell’IVA nella memoria di riepilogo. Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 20,
+   "titolo": "SCRITTURA RECORD CHIUSURA",
+   "testo": "Errore di scrittura del record di chiusura nella nella memoria di riepilogo. Riavviare il dispositivo. Se l’errore persiste, contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 21,
+   "titolo": "MEMORIA DI RIEPILOGO ESAURITA",
+   "testo": "Spazio nella memoria di riepilogo insufficiente per effettuare la scrittura record. Riavviare il dispositivo. Se l’errore persiste, contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 23,
+   "titolo": "MATRICOLA MEMORIA DI RIEPILOGO",
+   "testo": "Matricola discordante con quella presente in memoria di riepilogo. Riavviare il dispositivo. Se l’errore persiste, contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 26,
+   "titolo": "ERRORE SCRITTURA MEMORIA DI DETTAGLIO",
+   "testo": "Errore di scrittura della memoria di dettaglio. Controllare se la memoria di dettaglio è inserita correttamente. Se l’errore persiste, contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 27,
+   "titolo": "ERRORE LETTURA/SCRITTURA DATABASE",
+   "testo": "Errore di lettura o scrittura del database. Se l’errore persiste, contattare l’assistenza tecnica.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 28,
+   "titolo": "ERRORE SCRITTURA MEMORIA DI RIEPILOGO",
+   "testo": "Errore di scrittura della memoria di riepilogo. Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 32,
+   "titolo": "MEMORIA DI DETTAGLIO SCOLLEGATA",
+   "testo": "Errore della memoria di dettaglio perché scollegata. Controllare se la memoria di dettaglio è inserita correttamente. Se l’errore persiste, contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 33,
+   "titolo": "MEMORIA DI DETTAGLIO GUASTA",
+   "testo": "Errore della memoria di dettaglio perché guasta. Controllare se la memoria di dettaglio è inserita correttamente. Se l’errore persiste, contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 35,
+   "titolo": "TRASFERIMENTO FALLITO",
+   "testo": "Errore di trasferimento file su MMC/SD card esterna. Riprovare ad eseguire il trasferimento del/i file(s). Se l’errore persiste, contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 36,
+   "titolo": "ERRORE LETTURA/SCRITTURA MEMORIE",
+   "testo": "Errore di lettura o scrittura della memoria di dettaglio o della memoria di riepilogo. Se l’errore persiste, contattare l’assistenza tecnica.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 37,
+   "titolo": "FILE DISCO NOR DI LUNGHEZZA ERRATA",
+   "testo": "Si sta tentando una procedura di RESET 3 con dei dati non compatibili a causa della lunghezza dei files salvati in NOR diversa da quella attesa. Eseguire una procedura di RESET 1.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 46,
+   "titolo": "RESTO NON CONSENTITO",
+   "testo": "Non è consentito erogare il resto per la forma di pagamento scelta.",
+   "solo_gen_2_4": false
+  }
+ ],
+ "protocollo": [
+  {
+   "codice": 0,
+   "titolo": "ERRORE <codice errore> SCONOSCIUTO",
+   "testo": "È stato generato un errore sconosciuto. Prendere contatto con l’assistenza clienti.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 1,
+   "titolo": "NON PRESENTE",
+   "testo": "File o archivio non presente.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 2,
+   "titolo": "ERRORE LETTURA MEMORIA DI RIEPILOGO",
+   "testo": "Vi è stato un errore nella lettura dei dati della memoria di riepilogo. Si richiede l’intervento dell’assistenza tecnica.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 3,
+   "titolo": "VALORE NON VALIDO",
+   "testo": "L’immissione fatta non è corretta, cancellare e ricominciare.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 4,
+   "titolo": "ERRORE DI CODICE INTERNO",
+   "testo": "Se l’operazione richiesta non è stata eseguita, ripeterla. Se l’errore persiste, contattare l’assistenza tecnica. Nel caso di dispositivo a batteria si può verificare quando la batteria è scarica. Collegare il dispositivo alla rete elettrica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 5,
+   "titolo": "OPERAZIONE NON POSSIBILE",
+   "testo": "L’operazione eseguita non è corretta, terminare eventuali documenti in corso e ripetere.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 6,
+   "titolo": "ERRORE SCRITTURA LOGOTIPO IN MEMORIA DI RIEPILOGO",
+   "testo": "Impossibile scrivere il logotipo fiscale nella memoria di riepilogo.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 7,
+   "titolo": "IN SCRITTA TOTALE",
+   "testo": "Si è tentato di inviare la scritta “Totale” in una vendita.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 8,
+   "titolo": "GIÀ FATTO",
+   "testo": "È impossibile eseguirlo nuovamente.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 9,
+   "titolo": "TOTALE SCONTRINO ECCESSIVO",
+   "testo": "Superato, come importo, il valore massimo sul totale scontrino pari a €9999999.99.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 10,
+   "titolo": "TOTALE GIORNALIERO ECCESSIVO",
+   "testo": "Superato, come importo, il valore massimo sul totale giornaliero pari a € 9999999.99.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 11,
+   "titolo": "ERRORE IN IMPORTO",
+   "testo": "Il prezzo/importo non è corretto.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 12,
+   "titolo": "DATA NON VALIDA",
+   "testo": "È stata inserita una data non valida rispetto a quella memorizzata sul dispositivo.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 13,
+   "titolo": "DATA / ORA NON VALIDA",
+   "testo": "Si è inserito una data / ora non valida, correggere e reimpostare.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 14,
+   "titolo": "DATA DIVERSA",
+   "testo": "Si è inserito una data differente da quella memorizzata, correggere e reimpostare.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 16,
+   "titolo": "FINE CARTA",
+   "testo": "Errore per fine carta. Sostituire il rotolo.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 17,
+   "titolo": "SLIP PRINTER",
+   "testo": "Errore slip printer.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 18,
+   "titolo": "RAGIONE SOCIALE MANCANTE",
+   "testo": "Non è stata programmata l’intestazione del documento.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 19,
+   "titolo": "CHIUSURA MEMORIA DI RIEPILOGO NON POSSIBILE",
+   "testo": "Non è stato possibile scrivere la chiusura in memoria di riepilogo.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 20,
+   "titolo": "Riservato.",
+   "testo": "",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 21,
+   "titolo": "DOCUMENTO IN CORSO",
+   "testo": "Un terminale remoto sta inviando un documento. Attendere che l’operazione in corso venga terminata.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 22,
+   "titolo": "DATE DIVERSE",
+   "testo": "Nella richiesta sono state inserite date incongruenti.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 23,
+   "titolo": "TOTALE NEGATIVO",
+   "testo": "Il totale dello scontrino è negativo, aggiungere importi o annullare.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 24,
+   "titolo": "IN LUNGHEZZA COMANDO",
+   "testo": "È stato inviato un comando di lunghezza errata o non supportata.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 25,
+   "titolo": "PAGAMENTO INCOMPLETO",
+   "testo": "È stato inviato un pagamento non completo.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 26,
+   "titolo": "PROCEDURA INTERROTTA DALL’UTENTE",
+   "testo": "La procedura è stata interrotta dall’utente.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 27,
+   "titolo": "DB ENGINE COD. <codice errore>",
+   "testo": "Errore generico di database (viene visualizzato un sottocodice interno che definisce il tipo di errore SQLite). Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 28,
+   "titolo": "IVA NON PROGRAMMATA",
+   "testo": "Impostare l’aliquota IVA.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 29,
+   "titolo": "IVA NEGATIVA",
+   "testo": "È stata impostata un’aliquota IVA negativa.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 30,
+   "titolo": "MEMORIA DI DETTAGLIO ESAURITA",
+   "testo": "La memoria di dettaglio è esaurita. Procedere alla sostituzione.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 31,
+   "titolo": "MEMORIA DI DETTAGLIO QUASI ESAURITA",
+   "testo": "Si sta esaurendo la memoria di dettaglio. Sostituirla il prima possibile.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 32,
+   "titolo": "INIZIALIZZAZIONE MEMORIA DI DETTAGLIO NON POSSIBILE",
+   "testo": "Non è stato possibile inizializzare la nuova memoria di dettaglio. Sostituirla con un’altra ed avvisare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 33,
+   "titolo": "MEMORIA DI DETTAGLIO NON PRESENTE",
+   "testo": "Manca la memoria di dettaglio. Inserirla nel dispositivo.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 34,
+   "titolo": "DATI MEMORIA DI DETTAGLIO ERRATI",
+   "testo": "Tentativo fallito di scrittura sulla memoria di dettaglio.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 35,
+   "titolo": "LA MEMORIA DI RIEPILOGO È STATA SCOLLEGATA",
+   "testo": "La memoria di riepilogo è stata scollegata. Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 36,
+   "titolo": "ERRORE LETTURA/SCRITTURA MEMORIE",
+   "testo": "Errore di lettura o scrittura memoria di dettaglio o memoria di riepilogo. Se l’errore persiste, contattare l’assistenza tecnica.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 37,
+   "titolo": "COPERCHIO APERTO",
+   "testo": "Il coperchio vano carta è stato aperto durante la stampa di un report fiscale.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 38,
+   "titolo": "MEMORIA DI DETTAGLIO NON IDENTIFICATA",
+   "testo": "La memoria di dettaglio non è omologata. Contattare il rivenditore autorizzato.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 39,
+   "titolo": "SD/MMC CON PASSWORD",
+   "testo": "La SD/MMC inserita non è utilizzabile in quanto protetta da password. Utilizzare una password non protetta.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 40,
+   "titolo": "DATO MEMORIA DI DETTAGLIO NON PRESENTE",
+   "testo": "Il dato cercato sulla memoria di dettaglio non è stato trovato.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 41,
+   "titolo": "MEMORIA DI DETTAGLIO ERRATA",
+   "testo": "È stata inserita una memoria di dettaglio non associata al dispositivo. Inserire il supporto corretto.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 43,
+   "titolo": "MEMORIA DI DETTAGLIO CLONATA",
+   "testo": "La memoria di dettaglio è stata copiata o clonata.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 44,
+   "titolo": "UPGRADE RICHIESTO",
+   "testo": "Un aggiornamento firmware è pronto e necessita di conferma.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 46,
+   "titolo": "RESTO NON CONSENTITO",
+   "testo": "Non è consentito erogare il resto per la forma di pagamento scelta.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 47,
+   "titolo": "NON FISCALIZZATO",
+   "testo": "Il dispositivo non è fiscalizzato. Eseguire una fiscalizzazione.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 48,
+   "titolo": "CONTROL BOX OCCUPATA",
+   "testo": "Errore di control box occupata. Riavviare la control box.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 49,
+   "titolo": "CONTROL BOX SERIAL NUMBER ERRATO",
+   "testo": "Numero di serie errato della control box.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 50,
+   "titolo": "MEMORIA DI RIEPILOGO NON PRESENTE",
+   "testo": "È stata riconosciuta una disconnessione della memoria di riepilogo. Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 51,
+   "titolo": "MEMORIA DI RIEPILOGO PIENA",
+   "testo": "La memoria di riepilogo si è esaurita. Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 52,
+   "titolo": "JUMPER HWINIT INSERITO",
+   "testo": "È stato lasciato inserito il jumper del hardware init. Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 53,
+   "titolo": "DISPOSITIVO GIÀ SERIALIZZATO",
+   "testo": "Si sta tentando di serializzare la memoria di riepilogo già serializzata.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 54,
+   "titolo": "CHIUSURA FISCALE NECESSARIA",
+   "testo": "È richiesta la chiusura fiscale.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 55,
+   "titolo": "MODO TRAINING ATTIVO",
+   "testo": "È attivo il modo di apprendimento.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 56,
+   "titolo": "DISPLAY NON PRESENTE (è emesso un beep ogni 3 secondi)",
+   "testo": "Il visore cliente è scollegato.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 57,
+   "titolo": "DATA/ORA NON IMPOSTATI",
+   "testo": "Non è stata inserita la data e l’ora.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 58,
+   "titolo": "Riservato.",
+   "testo": "",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 59,
+   "titolo": "DISPOSITIVO NON FISCALIZZATO",
+   "testo": "Dispositivo non fiscalizzabile perché già fiscalizzato.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 60,
+   "titolo": "DISPOSITIVO NON SERIALIZZATO",
+   "testo": "Il dispositivo non è ancora stato serializzato. Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 61,
+   "titolo": "24H DALL’ULTIMA CHIUSURA",
+   "testo": "Sono passate 24 ore dall’ultima chiusura fiscale. Eseguire una chiusura fiscale.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 62,
+   "titolo": "RICEZIONE DATI IN CORSO",
+   "testo": "Ricezione dati da remoto a scontrino aperto; chiudere lo scontrino da tastiera. Lo scontrino in memoria verrà stampato alla chiusura della transazione corrente da tastiera.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 63,
+   "titolo": "TRANSAZIONE FALLITA",
+   "testo": "Transazione fallita su EFT-POS.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 64,
+   "titolo": "COPERCHIO APERTO",
+   "testo": "Assicurarsi che il coperchio sia chiuso.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 65,
+   "titolo": "ERRORE ALIMENTAZIONE TESTINA",
+   "testo": "Tensione elevata su testina termica. Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 66,
+   "titolo": "ERRORE TEMPERATURA TESTINA",
+   "testo": "Temperatura elevata su testina termica. Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 67,
+   "titolo": "ERRORE TAGLIERINA",
+   "testo": "Errore taglierina. Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 68,
+   "titolo": "TESTINA SCOLLEGATA",
+   "testo": "Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 69,
+   "titolo": "LUNGHEZZA MEMORIA DI DETTAGLIO ERRATA",
+   "testo": "Capienza del supporto della memoria di dettaglio non supportata. Sostituire il supporto con uno di capienza adeguata.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 70,
+   "titolo": "24H SUPERATE",
+   "testo": "Sono passate più di 24 ore dalla prima vendita effettuata. Eseguire una chiusura fiscale.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 71,
+   "titolo": "2° Z REPORT NON PERMESSO",
+   "testo": "La seconda chiusura fiscale non è permessa. Eseguire almeno una vendita.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 72,
+   "titolo": "HWINIT RICHIESTO",
+   "testo": "È richiesto un hardware init. Eseguire un’inizializzazione hardware.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 73,
+   "titolo": "ASSISTENZA TECNICA",
+   "testo": "Verifica periodica scaduta, dispositivo bloccato. È necessario l’intervento dell’assistenza tecnica. Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 74,
+   "titolo": "RX TIMEOUT",
+   "testo": "Timeout nella ricezione.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 75,
+   "titolo": "DISPOSITIVO OCCUPATO",
+   "testo": "Il dispositivo è impegnato nel consolidamento di un reso o di un annullo.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 76,
+   "titolo": "DISPOSITIVO OCCUPATO",
+   "testo": "Il dispositivo è impegnato nel consolidamento di uno scontrino dematerializzato.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 77,
+   "titolo": "DISPOSITIVO DISMESSO",
+   "testo": "Dispositivo dismesso.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 78,
+   "titolo": "LICENZA FW INVALIDA",
+   "testo": "Impossibile procedere senza aver prima acquistato la licenza.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 81,
+   "titolo": "NON SERIALIZZATO",
+   "testo": "Il numero di serie è mancante.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 82,
+   "titolo": "NON ATTIVATO",
+   "testo": "Dispositivo non attivo. È richiesta un’attivazione.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 83,
+   "titolo": "DISPOSITIVO NON CENSITO",
+   "testo": "Il dispositivo non è stato ancora censito.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 84,
+   "titolo": "CERTIFICATO SCADUTO",
+   "testo": "Il certificato SSL del dispositivo è scaduto.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 85,
+   "titolo": "ESEGUIRE CHIUSURA DOPO HWINIT",
+   "testo": "È necessario eseguire una chiusura fiscale dopo un hardware init.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 86,
+   "titolo": "NESSUN FILE TROVATO",
+   "testo": "Fallita la ricerca del file.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 87,
+   "titolo": "FILE APERTO",
+   "testo": "Un file è ancora aperto.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 88,
+   "titolo": "NESSUN FILE APERTO",
+   "testo": "Nessun file è aperto.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 89,
+   "titolo": "ERRORE GENERICO",
+   "testo": "Errore generico del file system.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 90,
+   "titolo": "FINE DEL FILE",
+   "testo": "È stata raggiunta la fine del file.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 91,
+   "titolo": "DISCO PIENO",
+   "testo": "Il volume richiesto è pieno.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 92,
+   "titolo": "PARAMETRO NON VALIDO",
+   "testo": "C’è un errore nel comando.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 93,
+   "titolo": "SOLA SCRITTURA",
+   "testo": "Il file è in sola scrittura.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 94,
+   "titolo": "SOLA LETTURA",
+   "testo": "Il file è in sola lettura.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 95,
+   "titolo": "ERRORE LETTURA",
+   "testo": "Errore nella lettura del file.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 96,
+   "titolo": "ERRORE SCRITTURA",
+   "testo": "Errore nella scrittura del file.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 97,
+   "titolo": "ATTENDERE PREGO",
+   "testo": "",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 98,
+   "titolo": "OCCUPATO",
+   "testo": "Errore disponibile come eco solo dal protocollo CUSTOM. Il dispositivo è impegnato a processare un’operazione eseguita da tastiera. Terminare l’operazione e tornare allo stato di standby.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 99,
+   "titolo": "ECR",
+   "testo": "Errore disponibile come eco solo dal protocollo CUSTOM. Errore generico del motore gestionale (fare riferimento al comando 1015, vedere manuale del protocollo CUSTOM cod. 77100000000700).",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 100,
+   "titolo": "ERRORE <codice errore> SCONOSCIUTO",
+   "testo": "È stato generato un errore sconosciuto. Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 101,
+   "titolo": "MEMORIA ESAURITA",
+   "testo": "La memoria disponibile per la memorizzazione delle operazioni transitorie è esaurita. È necessario effettuare i relativi azzeramenti (es. azzerare i preconti tramite azzeramento finanziario).",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 102,
+   "titolo": "SUPERATO IMPORTO MASSIMO",
+   "testo": "Il prezzo immesso al volo è superiore a quello massimo impostato per quel reparto.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 103,
+   "titolo": "<riga>-<colonna> NON ASSOCIATO",
+   "testo": "È stato premuto un tasto a cui non corrisponde alcuna funzione.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 104,
+   "titolo": "TASTIERA NON SELEZIONATA",
+   "testo": "Non è stata selezionata una tastiera.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 105,
+   "titolo": "COMUNICAZIONE ERRATA",
+   "testo": "Controllare i parametri di configurazione di rete.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 106,
+   "titolo": "BATTERIA SCARICA",
+   "testo": "Lasciare il dispositivo acceso per 24 ore. Se il problema persiste, contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 107,
+   "titolo": "UPGRADE FALLITO",
+   "testo": "L’upgrade del file specificato è fallito. Verificare che i file utilizzati siano quelli corretti.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 108,
+   "titolo": "IMPORTO MINIMO NON RAGGIUNTO",
+   "testo": "Il prezzo al volo immesso è inferiore a quello minimo programmato per quel reparto.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 109,
+   "titolo": "CONTATORI NON AZZERATI",
+   "testo": "Non è stato possibile azzerare i contatori corrispondenti per cui la cancellazione risulta incompleta.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 110,
+   "titolo": "CONTROL BOX NON CONFIGURATA",
+   "testo": "Control box non configurata. Configurare la control box.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 111,
+   "titolo": "MEMORIA DRAM PIENA",
+   "testo": "Memoria piena. Riavviare la control box.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 112,
+   "titolo": "UTENTE NON RICONOSCIUTO, CONTROLLARE USERNAME",
+   "testo": "Problema di comunicazione con il portale fiscale. Controllare i parametri di collegamento al portale fiscale.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 113,
+   "titolo": "PASSWORD FTP ERRATA, CONTROLLARE PASSWORD",
+   "testo": "Problema di comunicazione con il portale fiscale. Controllare i parametri di collegamento al portale fiscale.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 114,
+   "titolo": "FILE NON DISPONIBILE, CONTROLLARE SERVER DIR",
+   "testo": "Il file cercato sul portale non esiste.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 115,
+   "titolo": "ERRORE SINTASSI XML, CONTROLLA FILE XML",
+   "testo": "Errore di comunicazione con il portale dovuta a sintassi non corretta del file XML.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 117,
+   "titolo": "FUNZIONE NON AMMESSA",
+   "testo": "La funzione richiesta non è applicabile alla situazione presente.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 118,
+   "titolo": "IMPOSTAZIONE ERRATA",
+   "testo": "La quantità immessa supera le 65535,99 unità.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 121,
+   "titolo": "MODIFICATORE ERRATO",
+   "testo": "Lo sconto inserito è superiore al 100%.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 122,
+   "titolo": "VALORE NON AMMESSO",
+   "testo": "Il valore immesso non è compreso tra il minimo ed il massimo previsti per quel parametro.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 123,
+   "titolo": "PASSWORD ERRATA",
+   "testo": "La parola chiave non è stata digitata correttamente (o è errata o è stata cambiata).",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 124,
+   "titolo": "ALIQUOTA IVA ERRATA",
+   "testo": "L’aliquota IVA selezionata non è corretta.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 125,
+   "titolo": "COMANDO OBEX ERRATO",
+   "testo": "Errore di trasmissione modem.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 126,
+   "titolo": "DIMENSIONE FILE NON VALIDA, CONTROLLARE FILE JAD/JAR",
+   "testo": "Errore nella dimensione del file utilizzato per aggiornare il modem.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 127,
+   "titolo": "COMANDO AT ERRATO",
+   "testo": "Errore di comunicazione modem.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 128,
+   "titolo": "ERRORE COMUNICAZIONE MODEM",
+   "testo": "Errore di comunicazione modem.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 129,
+   "titolo": "CHECKSUM PROTOCOLLO ERRATO",
+   "testo": "Errore di comunicazione modem.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 130,
+   "titolo": "COMANDO PROTOCOLLO ERRATO",
+   "testo": "Errore di comunicazione modem.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 131,
+   "titolo": "PARAMETRO PROTOCOLLO ERRATO",
+   "testo": "Errore di comunicazione modem.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 132,
+   "titolo": "FATTURA DIFFERITA RICHIESTA",
+   "testo": "È richiesta la fattura differita.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 133,
+   "titolo": "FATTURA TICKET RICHIESTA",
+   "testo": "È richiesta la fattura ticket.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 134,
+   "titolo": "CHIUDERE DOCUMENTO",
+   "testo": "È richiesta la chiusura del documento.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 135,
+   "titolo": "RISCUOTERE CREDITO",
+   "testo": "Al cliente che si vuole eliminare è stato fatto credito. Non sarà possibile eliminarlo finché non verrà riscosso e azzerato il credito residuo.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 136,
+   "titolo": "CONTANTE INSUFFICIENTE",
+   "testo": "La quantità di contante presente in cassa non è sufficiente per l’operazione richiesta.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 137,
+   "titolo": "PAGAMENTO NON VALIDO",
+   "testo": "Il tipo di pagamento selezionato non è ammesso per concludere l’operazione in corso.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 138,
+   "titolo": "QUANTITÀ NON SPECIFICATA",
+   "testo": "Si è tentato di inserire un Reparto/PLU senza specificare la quantità. Occorre farlo coerentemente a quanto programmato per quel reparto o per il reparto a cui è collegato quel PLU.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 139,
+   "titolo": "DESCRIZIONE MANCANTE",
+   "testo": "La descrizione è mancante.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 140,
+   "titolo": "OPERATORE GIÀ INSERITO",
+   "testo": "In modalità operatore obbligatorio e operatore a turno non è consentita la dichiarazione dello stesso operatore per più di una volta rispettivamente nello stesso documento e nello stesso turno.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 141,
+   "titolo": "IMPORTO PAGAMENTO ECCESSIVO",
+   "testo": "L’importo immesso è superiore a quello massimo programmato per quel pagamento.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 142,
+   "titolo": "RESTO ECCESSIVO",
+   "testo": "Il resto che si è prodotto è superiore a quello massimo programmato per quel pagamento.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 143,
+   "titolo": "CREDITO CLIENTE ECCESSIVO",
+   "testo": "Il credito che si è tentato di concedere è superiore a quello massimo programmato per quel cliente.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 144,
+   "titolo": "PAGAMENTO INESISTENTE",
+   "testo": "Il pagamento specificato è inesistente.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 145,
+   "titolo": "PAGAMENTO GIÀ PRESENTE",
+   "testo": "La modalità di pagamento è già presente.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 146,
+   "titolo": "MODIFICATORE INESISTENTE",
+   "testo": "Il modificatore specificato è inesistente.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 147,
+   "titolo": "MODIFICATORE GIÀ PRESENTE",
+   "testo": "Il modificatore è già presente.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 148,
+   "titolo": "REPARTO INESISTENTE",
+   "testo": "Il reparto richiesto non è utilizzabile poiché non esistente o cancellato.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 149,
+   "titolo": "REPARTO GIÀ PRESENTE",
+   "testo": "Il reparto è già presente.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 150,
+   "titolo": "PLU INESISTENTE",
+   "testo": "Il PLU richiesto non è utilizzabile poiché non esistente o cancellato.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 151,
+   "titolo": "PLU GIÀ PRESENTE",
+   "testo": "Il PLU è già presente.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 152,
+   "titolo": "OPERATORE INESISTENTE",
+   "testo": "L’operatore richiesto non è utilizzabile poiché non esistente o cancellato.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 153,
+   "titolo": "OPERATORE GIÀ PRESENTE",
+   "testo": "L’operatore è già presente.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 154,
+   "titolo": "CLIENTE INESISTENTE",
+   "testo": "Il cliente richiesto non è utilizzabile poiché non esistente o cancellato.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 155,
+   "titolo": "CLIENTE GIÀ PRESENTE",
+   "testo": "Il cliente è già presente.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 156,
+   "titolo": "NO CONVENZIONI",
+   "testo": "Nessuna convenzione è associata alla società selezionata.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 157,
+   "titolo": "CONVENZIONE INESISTENTE",
+   "testo": "La convenzione è inesistente.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 158,
+   "titolo": "CONVENZIONE GIÀ ESISTENTE",
+   "testo": "La convenzione è già esistente.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 159,
+   "titolo": "SOCIETÀ INESISTENTE",
+   "testo": "La società è inesistente.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 160,
+   "titolo": "SOCIETÀ GIÀ ESISTENTE",
+   "testo": "La società è già esistente.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 161,
+   "titolo": "PRECONTO <numero preconto> NON DISPONIBILE",
+   "testo": "Al numero di preconto richiesto non corrisponde alcun preconto salvato.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 162,
+   "titolo": "Riservato.",
+   "testo": "",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 163,
+   "titolo": "Riservato.",
+   "testo": "",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 164,
+   "titolo": "TAVOLO PIENO",
+   "testo": "Il numero di battute al tavolo ha raggiunto il massimo valore delle battute per ogni documento (150). Chiudere il tavolo.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 165,
+   "titolo": "TAVOLO VUOTO",
+   "testo": "Nessuna battuta è stata inserita nel tavolo.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 166,
+   "titolo": "CHIUDERE TAVOLO",
+   "testo": "Prima di eseguire l’operazione richiesta chiudere il tavolo.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 167,
+   "titolo": "Riservato.",
+   "testo": "",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 168,
+   "titolo": "Riservato.",
+   "testo": "",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 169,
+   "titolo": "Riservato.",
+   "testo": "",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 170,
+   "titolo": "ERRORE DI CONNESSIONE",
+   "testo": "Errore di connessione GPRS: verificare i parametri dell’access point.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 171,
+   "titolo": "ERRORE SERVER FTP",
+   "testo": "Errore di connessione FTP al server: controllare i parametri FTP.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 172,
+   "titolo": "ERRORE DI SCRITTURA FILE",
+   "testo": "Errore durante la scrittura del file sul server FTP: controllare il collegamento FTP con il server.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 173,
+   "titolo": "ERRORE SIM CARD",
+   "testo": "Errore SIM card: controllare se la SIM card è presente e inserita correttamente nel modem.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 174,
+   "titolo": "ERRORE FTP CHDIR, CONTROLLARE ID",
+   "testo": "Errore in connessione FTP: controllare nome cartella di trasferimento sul server.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 175,
+   "titolo": "DIMENSIONE ERRATA FILE XML",
+   "testo": "Dimensione errata del file XML: controllare file XML sul flash-disk.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 176,
+   "titolo": "INSERIRE PIN",
+   "testo": "Richiesta codice PIN sulla SIM card.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 177,
+   "titolo": "DIMENSIONE ERRATA JAD",
+   "testo": "Dimensione errata del file JAD: controllare sul flash-disk.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 178,
+   "titolo": "ERRORE OPERATORE SELEZIONATO",
+   "testo": "Errore dell’operatore telefonico selezionato sulla SIM card.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 179,
+   "titolo": "CONNESSIONE FTP GIÀ APERTA",
+   "testo": "Errore in collegamento FTP: la connessione è stata già aperta.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 180,
+   "titolo": "EVENTO NON VALIDO",
+   "testo": "Lo scontrino non è assegnato ad un evento valido.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 181,
+   "titolo": "MASSIMA CAPACITÀ RAGGIUNTA",
+   "testo": "È stata raggiunta la massima capacità.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 182,
+   "titolo": "ERRORE FTP TRASFERIMENTO FILE",
+   "testo": "Errore nel trasferire files dal server FTP al dispositivo.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 183,
+   "titolo": "ERRORE MODEM OCCUPATO",
+   "testo": "Modem occupato: comunicazione seriale occupata con un altro comando.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 184,
+   "titolo": "ERRORE CODICE ACK",
+   "testo": "Errore nel file di ACK ricevuto.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 185,
+   "titolo": "ERRORE INVIO Z REPORT",
+   "testo": "Errore nell’invio della chiusura fiscale.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 186,
+   "titolo": "EFD NUMERO SERIE NON IMPOSTATO",
+   "testo": "Il parametro numero di serie non è impostato correttamente nel database del modem.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 187,
+   "titolo": "CONNESSIONE FTP NON APERTA",
+   "testo": "Fallimento dell’apertura della connessione FTP.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 188,
+   "titolo": "ERRORE CANCELLAZIONE FILE FTP",
+   "testo": "Errore durante la cancellazione del file sul server FTP.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 189,
+   "titolo": "CLIENTE OBBLIGATORIO",
+   "testo": "Dichiarare il cliente prima di chiudere il documento.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 190,
+   "titolo": "IMPORTO PRELIEVO TROPPO ALTO",
+   "testo": "L’importo di prelievo è troppo elevato.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 191,
+   "titolo": "FUNZIONE NON ATTIVATA",
+   "testo": "La funzione che si sta tentando di utilizzare deve essere abilitata dall’apposita voce di menù.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 192,
+   "titolo": "MEMORIA ESAURITA, ESEGUIRE CHIUSURA FISCALE",
+   "testo": "La memoria batterizzata ha raggiunto la capienza massima. Eseguire una chiusura fiscale.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 193,
+   "titolo": "ERRORE SALVATAGGIO Z REPORT",
+   "testo": "Errore durante il salvataggio dell’ultima chiusura fiscale sulla flash-disk.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 194,
+   "titolo": "MANCATA CONFERMA",
+   "testo": "Ripetere l’operazione di sincronizzazione.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 195,
+   "titolo": "ERRORE FTP I/O",
+   "testo": "Controllare i parametri di collegamento FTP.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 196,
+   "titolo": "COMANDO ESTESO ERRATO",
+   "testo": "Controllare la configurazione generale.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 197,
+   "titolo": "MANCA CODICE CLIENTE",
+   "testo": "Inserire il codice cliente nei parametri di registrazione.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 198,
+   "titolo": "INSERIRE VRN",
+   "testo": "Errore nell’inserimento del numero di licenza dell’esercizio commerciale (VAT Registration Number, VRN).",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 199,
+   "titolo": "INSERIRE TAX OFFICE",
+   "testo": "È stata inserita un’aliquota IVA non valida.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 200,
+   "titolo": "INSERIRE DATA REGISTRAZIONE",
+   "testo": "È stata inserita una data di registrazione non valida.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 201,
+   "titolo": "CODICE CLIENTE NON VALIDO",
+   "testo": "Verificare il codice cliente nei parametri di registrazione.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 202,
+   "titolo": "SERIAL NUMBER ERRATO",
+   "testo": "Verificare il numero di serie.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 203,
+   "titolo": "LICENZA GIÀ ATTIVA",
+   "testo": "Verificare se il dispositivo è già stato registrato in precedenza.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 204,
+   "titolo": "LICENZA NON ACQUISTATA",
+   "testo": "Esaurito il numero di licenze disponibili per nuovi dispositivi.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 205,
+   "titolo": "ERRORE DI REGISTRAZIONE",
+   "testo": "Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 206,
+   "titolo": "BATTERIA ESAURITA",
+   "testo": "Collegare alla rete elettrica e ricaricare.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 207,
+   "titolo": "INSERIRE TIN",
+   "testo": "È richiesto l’inserimento dell’identificativo del tecnico (Technical Identification Number, TIN).",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 208,
+   "titolo": "FILE ACK NON RICEVUTO",
+   "testo": "Non è stato possibile inviare alla Revenue Authority i dati della giornata.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 209,
+   "titolo": "RISPOSTA SERVER HTTP ERRATA",
+   "testo": "Controllare i parametri di configurazione di rete oppure i parametri di configurazione del servizio Scontrino Sicuro.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 210,
+   "titolo": "ERRORE CRITTOGRAFIA",
+   "testo": "Errore nell’operazione di crittografia.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 211,
+   "titolo": "ERRORE DOWNLOAD MMC",
+   "testo": "Controllare i parametri di configurazione Ethernet oppure i parametri di configurazione del servizio Scontrino sicuro.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 212,
+   "titolo": "ERRORE DURANTE INIZIALIZZAZIONE FISCALE",
+   "testo": "È subentrato un errore durante l’inizializzazione fiscale.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 213,
+   "titolo": "DISPOSITIVO OCCUPATO IN OPERAZIONI TELEMATICHE",
+   "testo": "Il dispositivo è occupato durante l’esecuzione di operazioni telematiche.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 214,
+   "titolo": "ATTESA PERIODO DI INATTIVITÀ",
+   "testo": "Deve essere eseguita una chiusura fiscale giornaliera.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 215,
+   "titolo": "CODICE IVA NON CORRETTO",
+   "testo": "Il codice IVA inserito non è corretto.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 216,
+   "titolo": "TAMPER OPEN",
+   "testo": "Il dispositivo è stato aperto/manomesso. Contattare l’assistenza tecnica.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 217,
+   "titolo": "OCCUPATO DURANTE ESPORTAZIONE XML",
+   "testo": "Il dispositivo è occupato durante l’esportazione del file XML.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 218,
+   "titolo": "ESPORTAZIONE FILE LOTTERIA IN CORSO...",
+   "testo": "Il dispositivo sta esportando il file XML della lotteria degli scontrini.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 219,
+   "titolo": "PROTOCOLLO ERRATO",
+   "testo": "Si tenta di inviare un file XML al dispositivo ma il protocollo di comunicazione impostato è errato.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 220,
+   "titolo": "MODO FPU ERRATO",
+   "testo": "Si tenta di inviare un file XML al dispositivo ma esso non si trova nella corretta modalità (modo FPU).",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 221,
+   "titolo": "RICERCA LOTTERIA IN CORSO...",
+   "testo": "Il dispositivo è occupato nell’esecuzione di un report che prevede la ricerca e l’estrazione di un numero di scontrini dal database lotteria.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 222,
+   "titolo": "STATO ECR ERRATO",
+   "testo": "Il dispositivo non può gestire i comandi perché non si trova nello stato corretto.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 223,
+   "titolo": "IMPOSSIBILITATO ACCEDERE ALLA MEMORIA DI DETTAGLIO/MEMORIA DI RIEPILOGO",
+   "testo": "Non è possibile accedere alla memoria di riepilogo o alla memoria di dettaglio poiché non si possiedono i diritti.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 225,
+   "titolo": "ERRORE POS",
+   "testo": "Errore su pagamento POS.",
+   "solo_gen_2_4": false
+  },
+  {
+   "codice": 230,
+   "titolo": "ERRORE SCRITTURA EEPROM",
+   "testo": "Errore di scrittura nella EEPROM.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 231,
+   "titolo": "FASCIA ORARIA NON CONSENTITA PER INVIO",
+   "testo": "L’invio ricade nella fascia oraria in cui il server dell’Agenzia delle Entrate non è disponibile.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 232,
+   "titolo": "BILANCIA NON PRESENTE",
+   "testo": "Bilancia non presente, non collegata oppure spenta.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 233,
+   "titolo": "IL PESO è ZERO",
+   "testo": "Il peso rilevato e comunicato dalla bilancia è zero.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 235,
+   "titolo": "ERRORE SERVIZIO ETHERNET",
+   "testo": "Il servizio Ethernet non è stato avviato correttamente.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 236,
+   "titolo": "MIGRAZIONE NON AUTORIZZATA",
+   "testo": "La migrazione del dispositivo non è stata autorizzata.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 240,
+   "titolo": "FILE REMOTE.DB NON PRESENTE",
+   "testo": "Il file remote.db non è presente o non èaccessibile.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 242,
+   "titolo": "ERRORE FIRMA NEL FILE DI UPGRADE",
+   "testo": "Vi è un errore della firma nel file di upgrade.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 243,
+   "titolo": "FIRMA NON PRESENTE NEL FILE DI UPGRADE",
+   "testo": "Manca la firma nel file di upgrade.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 244,
+   "titolo": "CERTIFICATO MANCANTE",
+   "testo": "Il certificato non è presente in memoria di dettaglio.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 245,
+   "titolo": "XML NON VALIDO",
+   "testo": "Documento XML non valido.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 248,
+   "titolo": "MIGRAZIONE GIÀ FATTA",
+   "testo": "La migrazione del dispositivo è già stata eseguita.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 249,
+   "titolo": "MESSAGGIO ERRORE ACK",
+   "testo": "Errore in risposta al servizio Ethernet richiesto.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 250,
+   "titolo": "DISPOSITIVO GIÀ ATTIVATO",
+   "testo": "L’attivazione del dispositivo è già stata eseguita.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 253,
+   "titolo": "CHIAVE PRIMARIA MANCANTE",
+   "testo": "La chiave privata non è presente.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 254,
+   "titolo": "ERRORE CREAZIONE CSR",
+   "testo": "Errore nella creazione della richiesta di certificato firmato (CSR) del dispositivo.",
+   "solo_gen_2_4": true
+  },
+  {
+   "codice": 255,
+   "titolo": "RISPOSTA XML NON VALIDA",
+   "testo": "Errore nella creazione dell’oggetto di risposta XML.",
+   "solo_gen_2_4": true
+  }
+ ]
+}

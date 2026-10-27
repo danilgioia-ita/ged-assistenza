@@ -1,0 +1,5 @@
+{
+  "nota": "Ultimo firmware dichiarato dal produttore per modello. Lo dice la pagina AE del QR di una cassa con lo stesso inizio di matricola; si aggiorna a mano finché non c'è il collegamento al CRM. Un profilo può imporre il proprio (campo firmwareUltimo).",
+  "dichiarato_il": "2026-10-27",
+  "modelli": { "K3F-N": "15.04.05" }
+}
