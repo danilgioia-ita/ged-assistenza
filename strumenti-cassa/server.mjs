@@ -5,13 +5,18 @@
 //   node strumenti-cassa/server.mjs            apre il browser su http://127.0.0.1:<porta libera>/<token>/
 //   node strumenti-cassa/server.mjs --no-apri  non apre il browser (stampa solo l'indirizzo)
 //   --con-padre                                 esce da solo quando si chiude stdin (lo usa l'app Tecnico)
+//   --indirizzo-su-file <percorso>              scrive l'indirizzo in un file riservato (600) e lo toglie all'uscita (lo usa l'app
+//                                               Tecnico quando avvia il programma come job di launchd: niente stdout da leggere)
+//   --inattivo-minuti <N>                       esce da solo dopo N minuti senza richieste (mai con un passo in corso)
+//   --rimuovi-job <etichetta>                   all'uscita toglie il proprio job di launchd (un job lanciato con `launchctl submit` altrimenti
+//                                               viene rilanciato da launchd dopo ogni uscita, con un codice nuovo)
 //   node strumenti-cassa/server.mjs --simulatore  parte con una cassa FINTA (per provare l'interfaccia, mai sulla cassa vera)
 //
 // SICUREZZA: ascolta SOLO su 127.0.0.1; il token casuale è nell'indirizzo; si controllano Host e intestazione di richiesta,
 // così una pagina web qualunque non può far partire comandi. Ai comandi verso la cassa provvede la lista bianca (lib/listabianca.mjs).
 import http from 'node:http'
 import { randomBytes, timingSafeEqual } from 'node:crypto'
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeFileSync, renameSync, rmSync, chmodSync, mkdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { join, dirname } from 'node:path'
 import { execFile } from 'node:child_process'
@@ -33,7 +38,7 @@ const TIPI = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
 export async function avvia(opz = {}) {
   const {
     porta = 0, apri = false, cartella = cartellaDati(), consentiLoopback = false,
-    rapido = false, attesaTastoMs = 700, attendi = (ms) => new Promise((r) => setTimeout(r, ms)), adesso = () => new Date(), intervalloMs = 15_000, token = randomBytes(18).toString('hex'),
+    rapido = false, attesaTastoMs = 700, attendi = (ms) => new Promise((r) => setTimeout(r, ms)), adesso = () => new Date(), intervalloMs = 15_000, inattivoMs = 0, suInattivo = null, token = randomBytes(18).toString('hex'),
   } = opz
   const profili = leggiJson('profili.json')
   const ultimiFirmware = leggiJson('ultimi-firmware.json')
@@ -201,7 +206,9 @@ export async function avvia(opz = {}) {
 
   // ───────────────────────── il server ─────────────────────────
   const tokenBuf = Buffer.from(token)
+  let ultimaAttivita = Date.now(); let inVolo = 0
   const server = http.createServer(async (req, res) => {
+    ultimaAttivita = Date.now(); inVolo++; res.on('close', () => { inVolo--; ultimaAttivita = Date.now() })
     const nega = (codice, t) => { res.writeHead(codice, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(t) }
     try {
       const host = String(req.headers.host || '')
@@ -247,11 +254,30 @@ export async function avvia(opz = {}) {
 
   await new Promise((ok) => server.listen(porta, '127.0.0.1', ok))
   const indirizzo = `http://127.0.0.1:${server.address().port}/${token}/`
+  // Uscita per inattività: nessuna richiesta da N minuti, nessuna richiesta in volo, nessun passo di procedura in corso.
+  let guardia = null
+  if (inattivoMs > 0) {
+    guardia = setInterval(() => {
+      if (inVolo > 0 || sess.motore?.run?.inEsecuzione) return
+      if (Date.now() - ultimaAttivita >= inattivoMs) { clearInterval(guardia); suInattivo?.() }
+    }, Math.max(20, Math.min(30_000, Math.floor(inattivoMs / 4))))
+    guardia.unref?.()
+  }
   if (apri) execFile('open', [indirizzo], () => {})
   return {
     server, indirizzo, token, porta: server.address().port, sess, registro, archivio,
-    chiudi: () => new Promise((ok) => { server.closeAllConnections?.(); server.close(() => ok()) }),
+    chiudi: () => new Promise((ok) => { if (guardia) clearInterval(guardia); server.closeAllConnections?.(); server.close(() => ok()) }),
   }
+}
+
+// Scrive l'indirizzo (contiene il codice segreto) in un file leggibile solo dall'utente: prima il temporaneo a 600, poi rename,
+// così chi lo legge non vede mai un file a metà.
+export function scriviIndirizzoSuFile(percorso, indirizzo) {
+  mkdirSync(dirname(percorso), { recursive: true, mode: 0o700 })
+  const tmp = `${percorso}.${process.pid}.tmp`
+  writeFileSync(tmp, indirizzo + '\n', { mode: 0o600 })
+  chmodSync(tmp, 0o600)
+  renameSync(tmp, percorso)
 }
 
 // avvio da riga di comando
@@ -264,9 +290,25 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     sim = await avviaSimulatore({ porta: 0, conWeb: true })
     console.log(`Cassa FINTA su ${sim.host}: porta ${sim.porta} (protocollo) e ${sim.portaWeb} (web). Collega con IP ${sim.host} e questi numeri di porta.`)
   }
-  const app = await avvia({ apri: !args.includes('--no-apri'), consentiLoopback: simulatore, simulatore: sim ? { host: sim.host, porta: sim.porta, portaWeb: sim.portaWeb } : null })
+  const valoreDi = (nome) => { const i = args.indexOf(nome); return i >= 0 && i + 1 < args.length ? args[i + 1] : null }
+  const fileIndirizzo = valoreDi('--indirizzo-su-file')
+  const minuti = Number(valoreDi('--inattivo-minuti'))
+  let esciInattivo = () => {}
+  const app = await avvia({ apri: !args.includes('--no-apri'), inattivoMs: minuti > 0 ? minuti * 60_000 : 0, suInattivo: () => esciInattivo(), consentiLoopback: simulatore, simulatore: sim ? { host: sim.host, porta: sim.porta, portaWeb: sim.portaWeb } : null })
   console.log(`\nStrumenti cassa — GED Assistance Tecnico\n${app.indirizzo}\n\nL'indirizzo contiene un codice segreto: vale solo finché il programma è acceso. Chiudi con Ctrl+C.\nRegistro dei comandi: ${app.registro.cartella}\n`)
-  const esci = () => { app.chiudi().then(() => sim?.chiudi()).then(() => process.exit(0)) }
+  if (fileIndirizzo) scriviIndirizzoSuFile(fileIndirizzo, app.indirizzo)
+  const job = valoreDi('--rimuovi-job')
+  let uscendo = false
+  const esci = () => {
+    if (uscendo) return; uscendo = true
+    if (fileIndirizzo) rmSync(fileIndirizzo, { force: true })
+    app.chiudi().then(() => sim?.chiudi()).then(() => {
+      // launchctl remove dà SIGTERM a questo stesso processo: se non arriva in fretta usciamo da soli
+      if (job && /^[A-Za-z0-9._-]+$/.test(job)) execFile('/bin/launchctl', ['remove', job], () => process.exit(0))
+      else process.exit(0)
+    })
+  }
+  esciInattivo = esci
   process.on('SIGINT', esci); process.on('SIGTERM', esci)
   // Avviato dall'app Tecnico: se l'app si chiude (o muore) il canale su stdin si chiude e il programma va via con lei,
   // senza lasciare server orfani con il loro codice segreto.

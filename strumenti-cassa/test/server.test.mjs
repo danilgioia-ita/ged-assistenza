@@ -236,3 +236,58 @@ test('CON PADRE: avviato dall\'app, esce da solo quando l\'app chiude il canale 
   assert.notEqual(r, 'ancora vivo')
   assert.equal(r.c, 0)
 })
+
+test('INATTIVITÀ: senza richieste il server chiama l\'uscita; una richiesta rimanda la scadenza; un passo in corso la blocca', async () => {
+  const { avvia } = await import('../server.mjs')
+  const { mkdtempSync } = await import('node:fs')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  let scaduto = 0
+  const app = await avvia({ cartella: mkdtempSync(join(tmpdir(), 'sc-')), inattivoMs: 300, suInattivo: () => { scaduto++ } })
+  try {
+    // una richiesta ogni 100 ms per ~600 ms: non scade
+    for (let i = 0; i < 6; i++) { await grezzo(app.indirizzo + 'api/casse'); await new Promise((r) => setTimeout(r, 100)) }
+    assert.equal(scaduto, 0, 'con richieste in corso non deve scadere')
+    // un passo in corso blocca la scadenza
+    app.sess.motore = { run: { inEsecuzione: true } }
+    await new Promise((r) => setTimeout(r, 700))
+    assert.equal(scaduto, 0, 'con un passo in corso non deve scadere')
+    app.sess.motore = null
+    const t0 = Date.now()
+    while (!scaduto && Date.now() - t0 < 3000) await new Promise((r) => setTimeout(r, 50))
+    assert.equal(scaduto, 1, 'a riposo deve scadere una volta sola')
+  } finally { await app.chiudi() }
+})
+
+test('SENZA inattivoMs il server non scade mai', async () => {
+  const { avvia } = await import('../server.mjs')
+  const { mkdtempSync } = await import('node:fs')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  let scaduto = 0
+  const app = await avvia({ cartella: mkdtempSync(join(tmpdir(), 'sc-')), suInattivo: () => { scaduto++ } })
+  try { await new Promise((r) => setTimeout(r, 300)); assert.equal(scaduto, 0) } finally { await app.chiudi() }
+})
+
+test('INDIRIZZO SU FILE: scritto a 600, leggibile, tolto all\'uscita; il server esce da solo per inattività', async () => {
+  const { spawn } = await import('node:child_process')
+  const { fileURLToPath } = await import('node:url')
+  const { mkdtempSync, statSync, existsSync, readFileSync: leggi } = await import('node:fs')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  const srv = fileURLToPath(new URL('../server.mjs', import.meta.url))
+  const dir = mkdtempSync(join(tmpdir(), 'sc-ind-'))
+  const file = join(dir, 'sotto', 'indirizzo.txt')
+  const figlio = spawn(process.execPath, [srv, '--no-apri', '--indirizzo-su-file', file, '--inattivo-minuti', '0.01'], { stdio: 'ignore', env: { ...process.env, GED_CASSA_DATI: join(dir, 'dati') } })
+  const uscito = new Promise((ok) => figlio.on('exit', (c) => ok(c)))
+  try {
+    const t0 = Date.now()
+    while (!existsSync(file) && Date.now() - t0 < 8000) await new Promise((r) => setTimeout(r, 50))
+    assert.ok(existsSync(file), 'il file dell\'indirizzo deve comparire')
+    assert.equal(statSync(file).mode & 0o777, 0o600)
+    assert.match(leggi(file, 'utf8').trim(), /^http:\/\/127\.0\.0\.1:\d+\/[0-9a-f]{16,}\/$/)
+    const r = await Promise.race([uscito, new Promise((ok) => setTimeout(() => ok('vivo'), 10000))])
+    assert.equal(r, 0, '0,01 minuti = 600 ms: deve uscire da solo')
+    assert.equal(existsSync(file), false, 'all\'uscita il file sparisce')
+  } finally { figlio.kill() }
+})
