@@ -31,3 +31,13 @@ obbligatorie (senza immagine il riquadro resta vuoto, da firmare a penna).
 **Prova di identità col CRM:** `test/fixtures/crm/golden/*.pdf` li ha generati il codice PHP vero del CRM con gli stessi dati degli scenari
 (`test/fixtures/crm/scenari/`); `test/confronto-crm.test.mjs` li rigenera in Node e confronta byte per byte. Per rigenerare i golden
 (solo se cambia il CRM): `php test/confronto-crm/genera-crm.php <crm-core> test/fixtures/crm/scenari test/fixtures/crm/golden test/fixtures/crm/firme`.
+
+## La firma del tecnico (per ora caricata a mano; la fonte definitiva sarà il CRM)
+La firma del tecnico sul modulo è quella che il tecnico ha già nel CRM (`technicians.signature_path`). Oggi l'API di sola lettura del CRM
+esclude apposta le immagini delle firme, quindi **per ora** si carica UNA volta, come PNG, in «Impostazioni del tecnico → Firma del tecnico
+(dal CRM)»: si salva nell'archivio con permessi 600, legata al codice fiscale del tecnico (`firma-tecnico-<CF>.png`; se il CF cambia, la firma
+non vale più). Il modulo la usa sempre, nello stesso punto e alla stessa scala del CRM. **La fonte definitiva sarà un endpoint nuovo del CRM**
+(da fare nel progetto CRM): allora questo caricamento sparisce. Il riquadro col dito resta solo per il cliente.
+
+I file PNG di prova (`test/fixtures/crm/firme/`) vanno aggiunti con `git add -f`: il `.gitignore` del repository scarta `*png`, e senza di loro il
+PDF generato ha meno oggetti e il confronto con il CRM non torna.

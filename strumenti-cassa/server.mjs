@@ -82,7 +82,7 @@ export async function avvia(opz = {}) {
         collegata: !!sess.cassa, ip: sess.ip, matricola: sess.matricola, modello: sess.modello, firmware: sess.firmware,
         profilo: sess.matricola ? archivio.cassa(sess.matricola).profilo : 'diretto', profili: Object.fromEntries(Object.entries(profili).map(([k, v]) => [k, { nome: v.nome, nota: v.nota, etichette: v.etichette, registra: v.registra, aliquote: v.aliquote, intestazioneMaxRighe: v.intestazioneMaxRighe, manuali: v.manuali }])),
         impostazioni: archivio.impostazioni(), ultimaIp: archivio.impostazioni().ultimaIp, stili: STILI, tasti: TASTI, ora: oraItaliana(adesso()),
-        simulatore: opz.simulatore || null, cartellaDati: cartella,
+        simulatore: opz.simulatore || null, firmaTecnico: existsSync(join(cartella, fileFirma('tecnico'))), cartellaDati: cartella,
       }
     },
     async 'GET casse'() { return { casse: archivio.elenco(), collegata: sess.matricola || null } },
@@ -128,6 +128,18 @@ export async function avvia(opz = {}) {
       if (!profili[b?.profilo]) throw new CassaErrore('profilo sconosciuto', 'dati')
       const c = archivio.cassa(sess.matricola); c.profilo = b.profilo; archivio.salvaCassa(sess.matricola, c)
       registro.evento(sess.matricola, `profilo scelto: ${profili[b.profilo].nome}`)
+      return azioni['GET stato-app']()
+    },
+    // La firma del tecnico «dal CRM»: un'immagine PNG caricata una volta, salvata nell'archivio con permessi 600 e legata al suo codice fiscale.
+    async 'POST impostazioni/firma-tecnico'(b) {
+      const f = join(cartella, fileFirma('tecnico'))
+      if (b?.cancella) { if (existsSync(f)) unlinkSync(f); return azioni['GET stato-app']() }
+      const m = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(String(b?.png || ''))
+      if (!m) throw new CassaErrore('la firma deve essere un\'immagine PNG', 'dati')
+      const buf = Buffer.from(m[1], 'base64')
+      if (buf.length > 600_000 || !decodificaPng(buf)) throw new CassaErrore('la firma non si legge (serve un PNG non interlacciato, non troppo grande)', 'dati')
+      writeFileSync(f, buf, { mode: 0o600 }); chmodSync(f, 0o600)
+      if (sess.matricola) registro.evento(sess.matricola, 'firma del tecnico salvata (dalle impostazioni)')
       return azioni['GET stato-app']()
     },
     async 'POST impostazioni'(b) {
@@ -249,7 +261,8 @@ export async function avvia(opz = {}) {
     },
     async 'POST checklist/firma'(b) {
       cassaCollegata()
-      const chi = b?.chi === 'tecnico' ? 'tecnico' : b?.chi === 'cliente' ? 'cliente' : null
+      if (b?.chi === 'tecnico') throw new CassaErrore('la firma del tecnico è quella delle Impostazioni (la stessa che ha nel CRM): non si firma qui', 'dati')
+      const chi = b?.chi === 'cliente' ? 'cliente' : null
       if (!chi) throw new CassaErrore('di chi è la firma?', 'dati')
       const f = percorsoFirma(fileFirma(chi))
       if (b.cancella) { if (existsSync(f)) unlinkSync(f); return { ok: true } }
@@ -265,7 +278,9 @@ export async function avvia(opz = {}) {
   }
 
   // ───────────────────────── la check-list ufficiale ─────────────────────────
-  const fileFirma = (chi) => (chi === 'tecnico' ? 'firma-tecnico.png' : `firma-cliente-${sess.matricola.replace(/[^A-Za-z0-9]/g, '')}.png`)
+  // La firma del TECNICO è quella che ha nel CRM (technicians.signature_path): per ora si carica una volta nelle impostazioni, legata al
+  // suo codice fiscale (la fonte definitiva sarà un endpoint del CRM). La firma del CLIENTE è per cassa, a dito.
+  const fileFirma = (chi) => (chi === 'tecnico' ? `firma-tecnico-${archivio.impostazioni().tecnico.cf.replace(/[^A-Za-z0-9]/g, '')}.png` : `firma-cliente-${sess.matricola.replace(/[^A-Za-z0-9]/g, '')}.png`)
   const percorsoFirma = (nome) => join(cartella, nome)
   const firmaEsiste = (chi) => existsSync(percorsoFirma(fileFirma(chi)))
   const leggiFirma = (nome) => { const f = percorsoFirma(nome); return /^firma-[A-Za-z0-9.-]+\.png$/.test(nome) && existsSync(f) ? leggiFile(f) : null }

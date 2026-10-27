@@ -180,3 +180,36 @@ test('«CONFERMA TUTTE SÌ» è un gesto del tecnico: le proposte diventano sue;
     assert.equal(c.righe.flatMap((s) => s.righe).find((r) => r.numero === '2.5').fonte, 'proposta')
   } finally { await a.chiudi() }
 })
+
+test('FIRMA DEL TECNICO «dal CRM»: caricata una volta, permessi 600, legata al codice fiscale; nel PDF sta dove la mette il CRM', async () => {
+  const { statSync } = await import('node:fs')
+  const a = await ambiente({ chiusure: 4 })
+  try {
+    await a.collega(); mettiIntestazione(a.sim, KAMMOR)
+    await a.chiama('POST', 'checklist', { risposte: { sigillo_tipo: 'percussione' } })
+    const pdfUrl = a.app.indirizzo + 'api/modulo-ufficiale.pdf'
+    const senza = Buffer.from(await (await fetch(pdfUrl)).arrayBuffer()).toString('latin1')
+    assert.ok(!senza.includes('GedImg1'), 'senza firma il riquadro resta vuoto')
+    assert.equal((await a.chiama('GET', 'stato-app')).firmaTecnico, false)
+    assert.match((await a.chiama('POST', 'checklist/firma', { chi: 'tecnico', png: 'data:image/png;base64,AAAA' })).errore, /Impostazioni/, 'dalla check-list il tecnico non firma più')
+    const png = readFileSync(join(FIRME, 'firma-tecnico.png')).toString('base64')
+    assert.match((await a.chiama('POST', 'impostazioni/firma-tecnico', { png: 'data:image/png;base64,AAAA' })).errore, /non si legge/)
+    assert.equal((await a.chiama('POST', 'impostazioni/firma-tecnico', { png: 'data:image/png;base64,' + png })).firmaTecnico, true)
+    const file = join(a.dir, 'firma-tecnico-GIORLD84C23A024D.png')
+    assert.equal(statSync(file).mode & 0o777, 0o600, 'permessi 600')
+    // il modulo la usa: stessa immagine, stessa posizione e stessa scala del CRM (il golden è generato dal codice del CRM con la stessa immagine)
+    const pdf = Buffer.from(await (await fetch(pdfUrl)).arrayBuffer()).toString('latin1')
+    const crm = readFileSync(join(GOLDEN, 'da-strumenti-kammor.pdf')).toString('latin1')
+    const operatori = (s) => [...s.matchAll(/q [\d.]+ 0 0 [\d.]+ [\d.]+ [\d.]+ cm \/GedImg1 Do Q/g)].map((m) => m[0])
+    assert.ok(operatori(crm).length >= 1)
+    assert.deepEqual(operatori(pdf), operatori(crm).slice(0, operatori(pdf).length).length ? operatori(crm).slice(0, 2).filter((_, i) => i < operatori(pdf).length) : [])
+    assert.match(pdf, /\/Width 240 \/Height 90/)
+    // legata al codice fiscale: cambiato il CF, la firma non è più di questo tecnico
+    await a.chiama('POST', 'impostazioni', { tecnico: { cf: 'RSSMRA80A01H501U' } })
+    assert.equal((await a.chiama('GET', 'stato-app')).firmaTecnico, false)
+    assert.equal((await a.chiama('GET', 'checklist')).firme.tecnico, false)
+    // si toglie
+    await a.chiama('POST', 'impostazioni', { tecnico: { cf: 'GIORLD84C23A024D' } })
+    assert.equal((await a.chiama('POST', 'impostazioni/firma-tecnico', { cancella: true })).firmaTecnico, false)
+  } finally { await a.chiudi() }
+})
