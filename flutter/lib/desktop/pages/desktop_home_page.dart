@@ -507,7 +507,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
           bind.mainIsProcessTrusted(prompt: true);
           watchIsProcessTrust = true;
         }, help: 'Help', link: translate("doc_mac_permission"));
-      } else if (!bind.mainIsCanInputMonitoring(prompt: false)) {
+      } else if (gedMostraRiquadroMonitoraggioInput(outgoingOnly: isOutgoingOnly) &&
+          !bind.mainIsCanInputMonitoring(prompt: false)) {
         return buildInstallCard("Permissions", "config_input", "Configure",
             () async {
           bind.mainIsCanInputMonitoring(prompt: true);

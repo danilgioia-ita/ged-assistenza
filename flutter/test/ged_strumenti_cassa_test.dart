@@ -60,6 +60,11 @@ void main() {
         '/Users/x/Library/Application Support/GED Assistance/strumenti-cassa/indirizzo.txt');
   });
 
+  test('il riquadro permessi del Mac (Monitoraggio input) si nasconde nel Tecnico, resta nel cliente', () {
+    expect(gedMostraRiquadroMonitoraggioInput(outgoingOnly: true), isFalse);
+    expect(gedMostraRiquadroMonitoraggioInput(outgoingOnly: false), isTrue);
+  });
+
   testWidgets('la voce mostra «Strumenti cassa»', (t) async {
     await t.pumpWidget(
         const MaterialApp(home: Scaffold(body: GedStrumentiCassaVoce())));

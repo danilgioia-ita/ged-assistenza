@@ -14,6 +14,12 @@ bool gedMostraStrumentiCassa(
         {required bool outgoingOnly, required bool macOS}) =>
     outgoingOnly && macOS;
 
+// Il riquadro «Permissions / Configure» del Mac (Monitoraggio input; Registrazione schermo e Accessibilita' erano gia'
+// esclusi per la sola uscita) serve a chi VIENE controllato. Il Tecnico e' sola uscita: per lui porta a Impostazioni
+// di Sistema senza nulla da abilitare. La versione cliente lo mostra come prima.
+bool gedMostraRiquadroMonitoraggioInput({required bool outgoingOnly}) =>
+    !outgoingOnly;
+
 // Un'app lanciata dal Finder non ha il PATH del terminale: si guardano prima i posti noti, poi il PATH.
 List<String> gedCandidatiNode(String? path) => [
       '/opt/homebrew/bin/node',
