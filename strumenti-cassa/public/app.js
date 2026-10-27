@@ -3,7 +3,7 @@
 const BASE = location.pathname.endsWith('/') ? location.pathname : location.pathname + '/'
 const S = {
   app: null, cassa: null, proc: null, aperto: '', ip: '', trovate: null, cercando: false, collegando: false,
-  intest: null, aliquote: null, conf: {}, input: {}, riletto: {}, check: null, registro: [], testoCrm: '', lettura: false, display: '',
+  casse: null, scheda: null, intest: null, aliquote: null, conf: {}, input: {}, riletto: {}, check: null, registro: [], testoCrm: '', lettura: false, display: '',
 }
 
 // ───────────────────────── utilità ─────────────────────────
@@ -69,6 +69,34 @@ async function caricaProcedura() { S.proc = await api('GET', 'procedura'); diseg
 async function caricaCheck() { S.check = await api('GET', 'checklist'); disegnaCheck() }
 async function caricaRegistro() { S.registro = (await api('GET', 'registro?righe=200')).righe; disegnaRegistro() }
 
+// ───────────────────────── casse preparate ─────────────────────────
+async function caricaCasse() { S.casse = (await api('GET', 'casse')).casse; disegnaCasse() }
+function disegnaCasse() {
+  if (!S.casse) return riempi('s-casse')
+  const nomeP = (k) => S.app?.profili?.[k]?.nome || k
+  const sc = S.scheda
+  riempi('s-casse',
+    h('div', { class: 'riga fra' }, h('h2', null, 'Casse preparate'),
+      h('button', { class: 'primario', onclick: () => { S.scheda = null; disegnaCasse(); $('s-collega').scrollIntoView({ behavior: 'smooth' }); $('ip')?.focus() } }, 'Prepara una cassa nuova')),
+    S.casse.length === 0 ? h('p', { class: 'tenue', style: 'margin:0' }, 'Nessuna cassa ancora. «Prepara una cassa nuova» porta a Collega e Cerca in rete.') : null,
+    S.casse.length ? h('table', null,
+      h('thead', null, h('tr', null, ['Matricola', 'Profilo', 'Esercente', 'Ultima attività', 'Fatto / resta', ''].map((x) => h('th', { scope: 'col' }, x)))),
+      h('tbody', null, S.casse.map((c) => h('tr', null,
+        h('td', null, h('b', null, c.matricola)), h('td', null, nomeP(c.profilo)), h('td', null, c.esercente || '—'), h('td', null, c.ultimaAttivita || '—'),
+        h('td', { style: 'max-width:360px' }, c.nota ? c.nota : `${c.righeVerificate} righe verificate dalla procedura, ${c.spuntate} spunte${c.vp ? ' · VP del ' + c.vp.data : ''}`),
+        h('td', null, h('div', { class: 'riga', style: 'gap:6px;flex-wrap:nowrap' },
+          h('button', { onclick: () => agisci(async () => { S.scheda = await api('GET', 'casse/scheda?matricola=' + encodeURIComponent(c.matricola)); disegnaCasse() }) }, 'Apri'),
+          c.ip && !S.app?.collegata ? h('button', { class: 'contorno', onclick: () => { S.ip = c.ip; collega() } }, 'Collega') : null)))))) : null,
+    sc ? h('div', { class: 'riquadro' },
+      h('div', { class: 'riga fra' }, h('h3', null, `${sc.matricola} · ${sc.nomeProfilo || sc.profilo}`), h('button', { onclick: () => { S.scheda = null; disegnaCasse() } }, 'Chiudi la scheda')),
+      h('span', { class: 'piccolo' }, 'Scheda in sola lettura: viene dall\'archivio, non dalla cassa.' + (sc.ip ? ` IP noto: ${sc.ip}.` : '')),
+      h('div', { class: 'griglia' }, Object.entries(sc.dati).filter(([, v]) => v).map(([k, v]) => h('div', { class: 'spia' }, h('div', { class: 't' }, h('span', { class: 'piccolo' }, k), h('b', null, v))))),
+      h('div', { class: 'campo' }, h('label', { for: 'nota-c' }, 'Nota (cosa è fatto e cosa resta)'), h('textarea', { id: 'nota-c', rows: 4, style: 'font-size:14px;padding:8px;border:1px solid #b9c3cd;border-radius:6px', oninput: (e) => { sc.nota = e.target.value } }, sc.nota)),
+      h('div', { class: 'riga' }, h('button', { class: 'primario', onclick: () => agisci(async () => { await api('POST', 'casse/nota', { matricola: sc.matricola, nota: sc.nota }); await caricaCasse() }, 'Nota salvata') }, 'Salva la nota')),
+      h('div', { class: 'griglia larga' }, sc.righe.filter((r) => r.si).map((r) => h('div', { class: 'check' + (r.verificata ? ' auto' : '') }, h('span', null, h('span', { class: 'nr' }, r.riga + ' '), r.testo)))),
+      sc.registro.length ? h('pre', { class: 'registro', style: 'max-height:200px' }, sc.registro.join('\n')) : null) : null)
+}
+
 // ───────────────────────── testata e collegamento ─────────────────────────
 function disegnaTestata() {
   const a = S.app
@@ -89,7 +117,7 @@ function disegnaCollega() {
   if (a?.collegata) {
     riempi('s-collega', h('div', { class: 'riga fra' },
       h('div', null, h('b', null, 'Collegata: '), `${a.matricola} su ${a.ip}`, h('div', { class: 'piccolo' }, 'La matricola si rilegge (1008) e si controlla prima di ogni scrittura.')),
-      h('button', { onclick: () => agisci(async () => { await api('POST', 'scollega'); S.cassa = null; S.proc = null; S.check = null; await caricaApp(); disegnaTutto() }) }, 'Scollega')))
+      h('button', { onclick: () => agisci(async () => { await api('POST', 'scollega'); S.cassa = null; S.proc = null; S.check = null; await caricaApp(); disegnaTutto(); await caricaCasse() }) }, 'Scollega')))
     return
   }
   riempi('s-collega',
@@ -111,7 +139,7 @@ async function collega() {
     await api('POST', 'collega', { ip: S.ip, ...(sim ? { porta: sim.porta, portaWeb: sim.portaWeb } : {}) })
     await rileggi(); await caricaCheck(); await caricaRegistro(); await caricaProcedura()
     avviso('Cassa collegata e letta', 'bene')
-  } catch (e) { avviso(e.message, 'male', e.dettaglio) } finally { S.collegando = false; disegnaTutto() }
+  } catch (e) { avviso(e.message, 'male', e.dettaglio) } finally { S.collegando = false; disegnaTutto(); caricaCasse().catch(() => {}) }
 }
 async function cerca() {
   S.cercando = true; disegnaCollega()
@@ -416,10 +444,11 @@ function disegnaPiede() {
   riempi('piede', h('p', { class: 'piccolo' }, 'Strumenti cassa è un programma locale: ascolta solo su questo Mac, l\'indirizzo contiene un codice segreto e vale finché il programma è acceso. Mai 3006, mai la lettura stampata (7101 OPER 0), mai reset né firmware; chiave, censimento e attivazione restano guidati.'))
 }
 
-function disegnaTutto() { disegnaTestata(); disegnaCollega(); disegnaProfilo(); disegnaStato(); disegnaProgramma(); disegnaProcedure(); disegnaCheck(); disegnaRegistro(); disegnaImpostazioni(); disegnaPiede() }
+function disegnaTutto() { disegnaCasse(); disegnaTestata(); disegnaCollega(); disegnaProfilo(); disegnaStato(); disegnaProgramma(); disegnaProcedure(); disegnaCheck(); disegnaRegistro(); disegnaImpostazioni(); disegnaPiede() }
 
 ;(async () => {
   try { await caricaApp() } catch (e) { avviso('Non riesco a parlare col programma: ' + e.message, 'male') }
   disegnaTutto()
+  try { await caricaCasse() } catch (e) { avviso(e.message, 'male') }
   if (S.app?.collegata) { try { await rileggi(); await caricaCheck(); await caricaRegistro(); await caricaProcedura(); if (S.proc?.inEsecuzione) segui() } catch (e) { avviso(e.message, 'male') } }
 })()

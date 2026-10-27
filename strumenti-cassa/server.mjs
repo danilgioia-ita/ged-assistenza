@@ -73,6 +73,20 @@ export async function avvia(opz = {}) {
         simulatore: opz.simulatore || null, cartellaDati: cartella,
       }
     },
+    async 'GET casse'() { return { casse: archivio.elenco(), collegata: sess.matricola || null } },
+    // la scheda di una cassa preparata, in SOLA LETTURA: non parla con la cassa
+    async 'GET casse/scheda'(_, q) {
+      const m = String(q.get('matricola') || '')
+      if (!/^[A-Za-z0-9]{1,24}$/.test(m) || !archivio.elenco().some((x) => x.matricola === m)) throw new CassaErrore('cassa sconosciuta', 'dati')
+      const c = archivio.cassa(m)
+      return { matricola: m, profilo: c.profilo, nomeProfilo: profili[c.profilo]?.nome, ip: c.ip || '', nota: c.nota || '', vp: c.vp || null, dati: c.checklist?.dati || {}, righe: righeComposte(c.checklist || {}), spunte: c.spunte || {}, registro: registro.coda(m, 40) }
+    },
+    async 'POST casse/nota'(b) {
+      const m = String(b?.matricola || '')
+      if (!archivio.elenco().some((x) => x.matricola === m)) throw new CassaErrore('cassa sconosciuta', 'dati')
+      const c = archivio.cassa(m); c.nota = String(b.nota ?? '').slice(0, 2000); archivio.salvaCassa(m, c)
+      return { ok: true }
+    },
     async 'POST cerca'(b) {
       const ips = Array.isArray(b?.ips) ? b.ips.map(String) : null
       return cercaInRete({ ips, consentiLoopback, portaCassa: consentiLoopback && b?.porta ? Number(b.porta) : 9100, portaWeb: consentiLoopback && b?.portaWeb ? Number(b.portaWeb) : 80 })
@@ -90,6 +104,7 @@ export async function avvia(opz = {}) {
       sess.modello = (/(K3[A-Z0-9-]*)/.exec(letto.p1013) || [])[1] || null
       sess.firmware = (/(\d{1,2}\.\d{2}\.\d{2})/.exec(letto.p1013) || [])[1] || null
       sess.motore = new Motore(ctxMotore())
+      { const c = archivio.cassa(sess.matricola); c.ip = ip; archivio.salvaCassa(sess.matricola, c) }
       const imp = archivio.impostazioni(); imp.ultimaIp = ip; archivio.salvaImpostazioni(imp)
       registro.evento(sess.matricola, `collegata ${ip} (${sess.modello || '?'} ${sess.firmware || '?'})`)
       return azioni['GET stato-app']()
