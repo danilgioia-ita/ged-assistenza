@@ -60,6 +60,7 @@ export async function avvia(opz = {}) {
   })
 
   const cassaCollegata = () => { if (!sess.cassa) throw new CassaErrore('nessuna cassa collegata: usa «Collega»', 'non_collegata'); return sess.cassa }
+  const libera = () => { if (sess.motore?.run?.inEsecuzione) throw new CassaErrore('un passo della procedura è in corso: aspetta che finisca', 'occupato') }
   const conferma = (b) => { if (b?.conferma !== true) throw new CassaErrore('serve la conferma con il clic: non ho mandato niente', 'conferma'); return { clic: true } }
 
   // ───────────────────────── le azioni ─────────────────────────
@@ -77,6 +78,7 @@ export async function avvia(opz = {}) {
       return cercaInRete({ ips, consentiLoopback, portaCassa: consentiLoopback && b?.porta ? Number(b.porta) : 9100, portaWeb: consentiLoopback && b?.portaWeb ? Number(b.portaWeb) : 80 })
     },
     async 'POST collega'(b) {
+      libera()
       const ip = String(b?.ip || '').trim()
       const porta9100 = consentiLoopback && b?.porta ? Number(b.porta) : 9100
       const cassa = new Cassa({ ip, porta: porta9100, registro, attendi, consentiLoopback, rapido })
@@ -92,7 +94,7 @@ export async function avvia(opz = {}) {
       registro.evento(sess.matricola, `collegata ${ip} (${sess.modello || '?'} ${sess.firmware || '?'})`)
       return azioni['GET stato-app']()
     },
-    async 'POST scollega'() { Object.assign(sess, { cassa: null, web: null, ip: '', matricola: '', modello: null, firmware: null, motore: null, ultimoStato: null }); return azioni['GET stato-app']() },
+    async 'POST scollega'() { libera(); Object.assign(sess, { cassa: null, web: null, ip: '', matricola: '', modello: null, firmware: null, motore: null, ultimoStato: null }); return azioni['GET stato-app']() },
     async 'POST profilo'(b) {
       cassaCollegata()
       if (!profili[b?.profilo]) throw new CassaErrore('profilo sconosciuto', 'dati')
@@ -126,21 +128,21 @@ export async function avvia(opz = {}) {
       return { ok: true }
     },
     async 'POST programma/intestazione'(b) {
-      const cassa = cassaCollegata(); const c = conferma(b)
+      const cassa = cassaCollegata(); libera(); const c = conferma(b)
       const righe = preparaRighe(b.righe || [])
       const a = archivio.cassa(sess.matricola); a.intestazioneVoluta = righe.map((r) => ({ testo: r.testo, tipo: r.tipo })); archivio.salvaCassa(sess.matricola, a)
       return cassa.sessione((s) => impostaIntestazione(s, b.righe, { maxRighe: profiloDi().intestazioneMaxRighe }), { conferma: c })
     },
     async 'POST programma/aliquote'(b) {
-      const cassa = cassaCollegata(); const c = conferma(b)
+      const cassa = cassaCollegata(); libera(); const c = conferma(b)
       return cassa.sessione((s) => impostaAliquote(s, b.valori || {}), { conferma: c })
     },
     async 'POST programma/ora'(b) {
-      const cassa = cassaCollegata(); const c = conferma(b)
+      const cassa = cassaCollegata(); libera(); const c = conferma(b)
       return cassa.sessione((s) => impostaOra(s, { adesso: adesso() }), { conferma: c })
     },
     async 'POST tasto'(b) {
-      cassaCollegata(); conferma(b)
+      cassaCollegata(); libera(); conferma(b)
       const codice = typeof b.tasto === 'string' && b.tasto in TASTI ? TASTI[b.tasto] : Number(b.tasto)
       return { display: await sess.web.premi(codice) }
     },

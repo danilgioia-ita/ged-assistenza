@@ -47,8 +47,9 @@ export function indirizzoPrivato(ip) {
 function timeoutDi(cmd, base, rapido) {
   if (rapido) return base
   if (cmd.startsWith('2005')) return Math.max(base, 60_000)
-  if (cmd.startsWith('2006') || cmd.startsWith('8002')) return Math.max(base, 45_000)
-  if (cmd.startsWith('2002') || cmd.startsWith('64041') || cmd.startsWith('6303')) return Math.max(base, 30_000)
+  if (cmd.startsWith('2006') || cmd.startsWith('8002')) return Math.max(base, 90_000)
+  if (cmd.startsWith('2002') || cmd.startsWith('64041')) return Math.max(base, 60_000)
+  if (cmd.startsWith('6303')) return Math.max(base, 30_000)
   return base
 }
 
@@ -156,7 +157,7 @@ class Sessione {
   /** Come manda(), ma l'ERR99 (e 213/97/98) è «occupata»: restituisce null invece di lanciare. Per il ciclo su 1515. */
   async mandaSeLibera(comando, opz = {}) {
     try { return await this.manda(comando, opz) } catch (e) {
-      if (e instanceof ErroreCassa && [213, 97, 98, 0].includes(e.codice)) return null
+      if (e instanceof ErroreCassa && [99, 213, 97, 98, 0].includes(e.codice)) return null
       throw e
     }
   }

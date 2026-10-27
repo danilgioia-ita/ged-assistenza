@@ -285,3 +285,96 @@ test('la chiusura che «salta» o non avviene: il contatore non è salito di UNO
     } finally { await a.chiudi() }
   }
 })
+
+test('B1 · scontrini di prova: dopo un errore a metà si emettono SOLO quelli che mancano, e gli annulli li coprono tutti', async () => {
+  const a = await ambiente({ chiusure: 11, erroreDopoRighe: 3 })
+  try {
+    await esegueVP(a, { fino: 3 })
+    const r = await a.passo(3, { conferma: true })
+    assert.equal(r.passi[3].stato, 'errore')
+    assert.match(r.passi[3].errore.messaggio, /scontrino aperto/)
+    // il tecnico annulla lo scontrino rimasto aperto
+    const { Cassa } = await import('../lib/cassa.mjs')
+    const { STRINGA_ANNULLO_IN_CORSO } = await import('../lib/listabianca.mjs')
+    await new Cassa({ ip: '127.0.0.1', porta: a.sim.porta, consentiLoopback: true }).sessione((s) => s.manda(STRINGA_ANNULLO_IN_CORSO), { conferma: { clic: true } })
+    const r2 = await a.passo(3, { conferma: true })
+    assert.equal(r2.passi[3].stato, 'ok', JSON.stringify(r2.passi[3]))
+    const emessi = a.sim.docs.filter((d) => d.tipo === 1 && !d.annullato)
+    assert.equal(emessi.length, 2, 'due scontrini veri, non tre')
+    assert.equal(a.app.sess.motore.run.vars.ricevute.length, 2)
+    const r3 = await a.passo(4, { conferma: true })
+    assert.equal(r3.passi[4].stato, 'ok', JSON.stringify(r3.passi[4]))
+    assert.ok(emessi.every((d) => d.annullatoDa), 'NESSUNO scontrino resta non annullato')
+  } finally { await a.chiudi() }
+})
+
+test('B2 · nessuna risposta su 2006: la rilettura dei passi che si possono rileggere, e per 2006 si esce senza buttare la procedura', async () => {
+  const a = await ambiente({ chiusure: 11 })
+  try {
+    await esegueVP(a, { fino: 10 })
+    a.sim.imposta({ silenzioSu: '2006', silenzioEseguito: true })
+    a.app.sess.cassa.timeoutMs = 250
+    const r = await a.passo(10, { conferma: true, mm: '10', aa: '28' })
+    assert.equal(r.passi[10].stato, 'errore')
+    assert.equal(r.passi[10].daVerificare, true)
+    assert.equal(r.passi[10].senzaRilettura, true)
+    assert.equal(a.sim.comandi().filter((c) => c.startsWith('2006')).length, 1, 'non rimandato')
+    const s = await a.chiama('POST', 'procedura/segna', { passo: 10 })
+    assert.equal(s.corrente, 11, 'considera fatto: la procedura prosegue')
+    a.sim.imposta({ silenzioSu: null })
+    const d = await a.passo(11, { conferma: true })
+    assert.equal(d.passi[11].stato, 'ok')
+  } finally { await a.chiudi() }
+})
+
+test('B2 · fine intervento senza risposta: la rilettura (1104) trova la chiusura automatica e lo dà per fatto', async () => {
+  const a = await ambiente({ chiusure: 11 })
+  try {
+    await esegueVP(a, { fino: 8 })
+    a.sim.imposta({ silenzioSu: '64041', silenzioEseguito: true })
+    a.app.sess.cassa.timeoutMs = 250
+    const r = await a.passo(8, { conferma: true })
+    assert.equal(r.passi[8].daVerificare, true)
+    await new Promise((x) => setTimeout(x, 150))
+    const x = await a.chiama('POST', 'procedura/controlla', { passo: 8 })
+    assert.equal(x.rilettura.ok, true, x.rilettura.testo)
+    assert.equal(x.procedura.corrente, 9)
+    assert.equal(a.sim.comandi().filter((c) => c.startsWith('64041')).length, 1)
+  } finally { await a.chiudi() }
+})
+
+test('B2 · annulli senza risposta: la rilettura di 1017 dice se gli annulli ci sono', async () => {
+  const a = await ambiente({ chiusure: 11 })
+  try {
+    await esegueVP(a, { fino: 4 })
+    a.sim.imposta({ silenzioSu: '7101A00130002', silenzioEseguito: true })
+    a.app.sess.cassa.timeoutMs = 250
+    const r = await a.passo(4, { conferma: true })
+    assert.equal(r.passi[4].stato, 'errore')
+    assert.equal(r.passi[4].puoVerificare, true)
+    const x = await a.chiama('POST', 'procedura/controlla', { passo: 4 })
+    assert.equal(x.rilettura.ok, false, 'il secondo annullo (1) è stato mangiato dal silenzio ma era solo il controllo: non tutti emessi')
+  } finally { await a.chiudi() }
+})
+
+test('M1 · durante un passo in esecuzione: niente collega, scollega, tastiera, programmazione', async () => {
+  const a = await ambiente({ chiusure: 11 })
+  try {
+    await esegueVP(a, { fino: 1 })
+    a.app.sess.motore.run.inEsecuzione = true
+    for (const [n, c] of [['collega', { ip: '127.0.0.1' }], ['scollega', {}], ['tasto', { tasto: 'CHIAVE', conferma: true }], ['programma/ora', { conferma: true }]])
+      assert.match((await a.chiama('POST', n, c)).errore, /passo della procedura è in corso/, n)
+    a.app.sess.motore.run.inEsecuzione = false
+  } finally { await a.chiudi() }
+})
+
+test('M2 · ERR99 con 1015 = 000 durante l\'attesa dell\'invio è «occupata»: si aspetta, non si ferma', async () => {
+  const a = await ambiente({ chiusure: 11, invioMs: 100 })
+  try {
+    await esegueVP(a, { fino: 2 })
+    // il sim risponde 1015 = 000 mentre è occupato
+    a.sim.imposta({ ultimoErroreFinto: true })
+    const r = await a.passo(2)
+    assert.equal(r.passi[2].stato, 'ok', JSON.stringify(r.passi[2]))
+  } finally { await a.chiudi() }
+})

@@ -34,6 +34,7 @@ export function avviaSimulatore(o = {}) {
   const stampe = []
   const guasti = [] // { quando(cmd, n), azione: 'tace'|'cade'|'err', eseguito }
   let nMut = 0
+  let nRighe = 0
   let offsetOraMin = o.offsetOraMin || 0
   const stato = {
     chiave: opz.chiave, censita: opz.censita, attivata: opz.attiva, inServizio: opz.attiva, fiscalizzata: opz.fiscalizzata, demo: opz.demo,
@@ -76,7 +77,7 @@ export function avviaSimulatore(o = {}) {
       case '1023': return '10231107'
       case '1012': return '1012' + step
       case '1016': return '1016' + (step >= 1 && step <= 3 ? '100' : '000')
-      case '1015': return '1015ERR' + String(ultimoErrore).padStart(3, '0')
+      case '1015': if (opz.ultimoErroreFinto) return '1015ERR000'; return '1015ERR' + String(ultimoErrore).padStart(3, '0')
       case '1104': return '1104' + String(chiusure).padStart(4, '0') + String(stato.dgfe).padStart(4, '0')
       case '1001': { const r = rome(oraCassa()); return '1001' + r.g + r.m + r.a + r.h + r.mi }
       case '1106': { const r = rome(stato.ultimaChiusura); return '1106' + r.g + r.m + r.a + r.h + r.mi + r.s }
@@ -156,6 +157,8 @@ export function avviaSimulatore(o = {}) {
         const lun = Number(cmd.slice(17, 19)); const descr = cmd.slice(19, 19 + lun); const coda = cmd.slice(19 + lun)
         if (!/^\d{9}$/.test(cmd.slice(5, 14)) || cmd.slice(14, 17) !== '001' || descr.length !== lun || !/^\d{9}(0\d|1[01])$/.test(coda)) return err(3)
         if (opz.erroreSuRiga) return err(opz.erroreSuRiga)
+        if (opz.erroreDopoRighe != null && nRighe >= opz.erroreDopoRighe) { opz.erroreDopoRighe = null; return err(16) }
+        nRighe++
         if (step !== 0 && step !== 1) return err(5)
         step = 1; righe.push({ cent: Number(coda.slice(0, 9)), qtyMilli: Number(cmd.slice(5, 14)) })
         return '3301'

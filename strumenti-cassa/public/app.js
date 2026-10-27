@@ -328,6 +328,7 @@ function passo(p, s, i) {
       az.push(h('button', { class: 'primario', onclick: () => agisci(async () => { S.proc = await api('POST', 'procedura/segna', { passo: i }); disegnaProcedure() }) }, 'L\'ho fatto'))
     }
     if (s.puoVerificare && s.stato === 'errore') az.push(h('button', { class: 'contorno', onclick: () => rilettura(s, i) }, 'Rileggi lo stato'))
+    if (s.senzaRilettura && s.stato === 'errore' && s.daVerificare && !S.riletto[s.id]) az.push(h('button', { class: 'contorno', onclick: () => { S.riletto[s.id] = true; disegnaProcedure() } }, 'Ho guardato la carta: è stato fatto'))
     if (s.tipo === 'scrive' && s.stato === 'errore' && !s.fiscalizzazione) az.push(h('button', { disabled: s.daVerificare && !S.riletto[s.id], onclick: () => agisci(async () => { S.proc = await api('POST', 'procedura/segna', { passo: i }); disegnaProcedure() }) }, 'Considera fatto (l\'ho visto sulla cassa)'))
     corpo.push(h('div', { class: 'riga' }, az))
     if (s.tastiera || s.id === 'p601') corpo.push(tastiera())

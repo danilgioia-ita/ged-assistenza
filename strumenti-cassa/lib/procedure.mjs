@@ -111,25 +111,37 @@ function defVP(ctx) {
         id: 'scontrini', titolo: 'Due scontrini di prova', dettaglio: 'Due scontrini da due righe da 1,11 €, pagamento elettronico: 2,22 € ciascuno.', tipo: 'scrive', conferma: 'clic',
         anteprima: () => [rigaVendita('PROVA VERIFICA 1', 111), rigaVendita('PROVA VERIFICA 2', 111), pagamentoElettronico(222), '3011', '3013', '1017', '(poi lo stesso per il secondo)'],
         async esegui(st) {
-          st.vars.ricevute = []
+          // NON si azzera: riprovando dopo un errore a metà si emettono solo gli scontrini che mancano per arrivare a 2.
+          st.vars.ricevute = st.vars.ricevute || []
           await ctx.sessione(async (s) => {
-            if (interpreta1012(await s.manda('1012')) !== 0) throw new PassoErrore('c\'è un documento aperto sulla cassa')
-            for (let k = 1; k <= 2; k++) {
+            if (interpreta1012(await s.manda('1012')) !== 0) throw new PassoErrore('c\'è un documento aperto sulla cassa: annullalo (tasto ANNUL.SCONTRINO) e riprova')
+            // un tentativo interrotto dopo 3013 e prima di 1017: lo scontrino c'è ma non l'ho registrato → lo ritrovo
+            if (st.vars.inEmissione) {
+              const d = interpreta1017(await s.manda('1017'))
+              const noti = st.vars.ricevute.map((r) => r.n)
+              if (d && !d.annullato && d.totaleCent === 222 && d.numero > Math.max(0, ...noti)) st.vars.ricevute.push({ n: d.numero, ggmmaa: d.ggmmaa, totaleCent: d.totaleCent })
+              st.vars.inEmissione = false
+            }
+            while (st.vars.ricevute.length < 2) {
+              st.vars.inEmissione = true
               try {
                 for (const c of [rigaVendita('PROVA VERIFICA 1', 111), rigaVendita('PROVA VERIFICA 2', 111), pagamentoElettronico(222), '3011', '3013']) await s.manda(c)
               } catch (e) {
                 const aperto = await s.manda('1012').then(interpreta1012).catch(() => null)
-                if (aperto) e.message += ` — Attenzione: sulla cassa c'è uno scontrino aperto (1012 = ${aperto}): annullalo con il tasto ANNUL.SCONTRINO della tastiera remota e rifai il passo.`
+                if (aperto) e.message += ` — Attenzione: sulla cassa c'è uno scontrino aperto (1012 = ${aperto}): annullalo con il tasto ANNUL.SCONTRINO e rifai il passo: emetterò solo quelli che mancano (finora ${st.vars.ricevute.length} su 2).`
+                else st.vars.inEmissione = false
                 throw e
               }
               const d = interpreta1017(await s.manda('1017'))
-              if (!d) throw new PassoErrore('1017 illeggibile dopo lo scontrino', true)
+              if (!d) throw new PassoErrore('1017 illeggibile dopo lo scontrino: rileggi lo stato', true)
+              st.vars.inEmissione = false
               st.vars.ricevute.push({ n: d.numero, ggmmaa: d.ggmmaa, totaleCent: d.totaleCent })
-              st.avanza(`scontrino ${k} emesso: n° ${d.numero}`)
+              st.avanza(`scontrino ${st.vars.ricevute.length} emesso: n° ${d.numero}`)
             }
           }, { clic: true })
-          ctx.checklist.auto('2.9', { ok: true, testo: `Due documenti di prova (n° ${st.vars.ricevute.map((r) => r.n).join(' e ')})` })
-          return `emessi gli scontrini n° ${st.vars.ricevute.map((r) => r.n).join(' e ')}`
+          const elenco = st.vars.ricevute.map((r) => r.n).join(' e ')
+          ctx.checklist.auto('2.9', { ok: true, testo: `Documenti di prova (n° ${elenco})` })
+          return `scontrini n° ${elenco}${st.vars.ricevute.length > 2 ? ` — ATTENZIONE: sulla cassa ce ne sono ${st.vars.ricevute.length}, non 2: li annullo tutti` : ''}`
         },
         verifica: (st) => ctx.sessione(async (s) => { const d = interpreta1017(await s.manda('1017')); const a = interpreta1012(await s.manda('1012')); return { ok: false, testo: `Ultimo documento: n° ${d?.numero} da ${d ? (d.totaleCent / 100).toFixed(2) : '?'} €, stato scontrino (1012) = ${a}. Se vedi i due scontrini sulla carta, usa «Considera fatto».` } }),
       },
@@ -144,11 +156,13 @@ function defVP(ctx) {
             const Z = c.chiusure + 1
             st.vars.zAnnulli = Z
             for (const r of st.vars.ricevute) {
+              if (r.annullato) continue
               const base = `7101A${cifre(Z, 4)}${cifre(r.n, 4)}${r.ggmmaa}`
               const ctrl = await s.manda(base + '8')
               if (ctrl !== '71011') throw new PassoErrore(`controllo dell'annullo del documento ${r.n} non superato (risposta ${ctrl}, FLAG ${ctrl[4]}: 1 trovato, 0 non trovato — succede in demo —, 2 non permesso). Non annullo.`)
               const ann = await s.manda(base + '1')
               if (ann !== '71011') throw new PassoErrore(`l'annullo del documento ${r.n} non è stato accettato (risposta ${ann})`, true)
+              r.annullato = true
               ultimo = interpreta1017(await s.manda('1017'))
               st.avanza(`annullato il documento ${r.n}`)
             }
@@ -157,6 +171,14 @@ function defVP(ctx) {
           ctx.checklist.auto('2.10', { ok: true, testo: `Annullo dei documenti di prova (n° ${st.vars.ricevute.map((r) => r.n).join(' e ')}, Z ${st.vars.zAnnulli})` })
           return `annullati i documenti ${st.vars.ricevute.map((r) => r.n).join(' e ')} (ultimo documento: ${ultimo?.numero ?? '?'})`
         },
+        verifica: (st) => ctx.sessione(async (s) => {
+          const a = interpreta1012(await s.manda('1012')); const d = interpreta1017(await s.manda('1017'))
+          const r = st.vars.ricevute || []
+          const atteso = r.length ? Math.max(...r.map((x) => x.n)) + r.filter((x) => true).length : null
+          if (a !== 0) return { ok: false, testo: `sulla cassa c'è un documento aperto (1012 = ${a})` }
+          if (atteso && d && d.numero >= atteso) { st.vars.ultimoDoc = d.numero; r.forEach((x) => { x.annullato = true }); return { ok: true, testo: `ultimo documento n° ${d.numero}: gli annulli risultano emessi` } }
+          return { ok: false, testo: `ultimo documento n° ${d?.numero ?? '?'}, ne aspettavo almeno ${atteso ?? '?'}: gli annulli NON risultano tutti emessi` }
+        }),
       },
       {
         id: 'chiusura2', titolo: 'Chiusura con le prove dentro', dettaglio: 'La chiusura che contiene gli scontrini di prova e i loro annulli.', tipo: 'scrive', conferma: 'scritta', parola: 'CHIUSURA', anteprima: () => ['1104', '1012', '20020', '1104'],
@@ -170,18 +192,28 @@ function defVP(ctx) {
       {
         id: 'inizio', titolo: 'Intervento tecnico: inizio', dettaglio: 'Apre l\'intervento sulla cassa (6404 fase 0).', tipo: 'scrive', conferma: 'clic', anteprima: () => ['64040'],
         async esegui() { await ctx.sessione(async (s) => { await s.manda('64040') }, { clic: true }); return 'intervento aperto' },
+        verifica: () => ctx.sessione(async (s) => ({ ok: false, testo: `1012 = ${interpreta1012(await s.manda('1012'))} (nessun documento aperto se 0). L'apertura dell'intervento non si rilegge dal protocollo: guarda la carta e usa «Considera fatto».` })),
       },
       {
         id: 'fine', titolo: 'Intervento tecnico: fine (verifica positiva)', dettaglio: 'Chiude l\'intervento con esito 3 (verifica periodica positiva), il tuo codice fiscale e la P.IVA del laboratorio. La cassa poi chiude da sola.', tipo: 'scrive', conferma: 'clic',
         anteprima: () => [fineCmd(imp())],
         async esegui(st) {
           const c = fineCmd(imp())
-          const dopo = await ctx.sessione(async (s) => { const p = interpreta1104(await s.manda('1104')); await s.manda(c); return p }, { clic: true })
-          st.vars.chiusureDopoFine = dopo?.chiusure
+          await ctx.sessione(async (s) => { const p = interpreta1104(await s.manda('1104')); st.vars.chiusureDopoFine = p?.chiusure; await s.manda(c) }, { clic: true })
+          st.vars.fineMandata = true
           ctx.checklist.auto('4.1', { ok: true, testo: 'Dati del tecnico e del laboratorio sul RT' })
           ctx.checklist.auto('4.2', { ok: true, testo: 'Esito registrato sul RT (verifica periodica positiva)' })
           return 'intervento chiuso con esito 3'
         },
+        // la prova che 64041 è stata accettata è la chiusura automatica della cassa
+        verifica: (st) => ctx.sessione(async (s) => {
+          const c = interpreta1104(await s.manda('1104'))
+          if (st.vars.chiusureDopoFine != null && c && c.chiusure > st.vars.chiusureDopoFine) {
+            ctx.checklist.auto('4.1', { ok: true, testo: 'Dati del tecnico e del laboratorio sul RT' }); ctx.checklist.auto('4.2', { ok: true, testo: 'Esito registrato sul RT (verifica periodica positiva)' })
+            return { ok: true, testo: `la cassa ha fatto la chiusura automatica (${st.vars.chiusureDopoFine} → ${c.chiusure}): la fine intervento è stata accettata` }
+          }
+          return { ok: false, testo: `chiusure ${c?.chiusure ?? '?'}: la chiusura automatica non c'è (ancora). Se serve attendi qualche secondo e rileggi; poi guarda la carta.` }
+        }),
       },
       {
         id: 'zauto', titolo: 'Chiusura automatica e invio', dettaglio: 'Dopo la fine dell\'intervento la cassa chiude da sola: aspetto che il contatore salga e che l\'Agenzia riceva.', tipo: 'lettura', anteprima: () => ['1104 (ripetuto)', '1515 0 <Z> 0000 (ripetuto)'],
@@ -200,6 +232,7 @@ function defVP(ctx) {
         },
       },
       {
+        senzaRilettura: true,
         id: 'memorie', titolo: 'Test delle memorie', dettaglio: 'La cassa stampa «avvio procedura verif. periodica». Mese e anno della PROSSIMA verifica (di norma fra 24 mesi). Può durare fino a 45 secondi.', tipo: 'scrive', conferma: 'clic', conCampi: ['mm', 'aa'],
         anteprima: (st) => [`2006${mmaa(st).mm}${mmaa(st).aa}`],
         async esegui(st, input) {
@@ -216,6 +249,7 @@ function defVP(ctx) {
         },
       },
       {
+        senzaRilettura: true,
         id: 'dgfe', titolo: 'Stampa DGFE degli scontrini di prova', dettaglio: 'Stampa la memoria di dettaglio dei documenti di prova (e dei loro annulli).', tipo: 'scrive', conferma: 'clic',
         anteprima: (st) => [dgfeCmd(st)],
         async esegui(st) {
@@ -379,7 +413,7 @@ export class Motore {
       id: r.id, titolo: r.def.titolo, nota: r.def.nota, corrente: r.corrente, inEsecuzione: r.inEsecuzione, finita: r.corrente >= r.def.passi.length,
       passi: r.def.passi.map((p, i) => ({
         n: i + 1, id: p.id, titolo: p.titolo, dettaglio: p.dettaglio, tipo: p.tipo, conferma: p.conferma || null, parola: p.parola || null, fiscalizzazione: !!p.fiscalizzazione,
-        conCampi: p.conCampi || null, tastiera: !!p.tastiera, pagina: p.pagina || null,
+        conCampi: p.conCampi || null, senzaRilettura: !!p.senzaRilettura, tastiera: !!p.tastiera, pagina: p.pagina || null,
         anteprima: p.anteprima ? safe(() => p.anteprima({ vars: r.vars })) : [], istruzioni: p.istruzioni ? safe(() => p.istruzioni({ vars: r.vars })) : [],
         puoVerificare: !!p.verifica, ...r.stati[i],
       })),
