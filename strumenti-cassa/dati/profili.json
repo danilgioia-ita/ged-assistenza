@@ -1,0 +1,40 @@
+{
+  "diretto": {
+    "nome": "Diretto nostro",
+    "nota": "Cliente nostro: impostazioni standard GED. A fine procedura il CRM si aggiorna (prossimo passo, non ancora collegato).",
+    "aliquote": { "1": 22, "2": 10, "3": 5, "4": 4 },
+    "intestazioneMaxRighe": 9,
+    "nature": null,
+    "manuali": [],
+    "registra": "Scheda del cliente nel CRM (prossimo passo)",
+    "firmwareUltimo": null,
+    "etichette": ["Aliquote 22·10·5·4", "Intestazione fino a 9 righe"]
+  },
+  "flatpay": {
+    "nome": "Flatpay",
+    "nota": "Cassa di un cliente Flatpay: profilo del committente.",
+    "aliquote": { "1": 22, "2": 10, "3": 5, "4": 4 },
+    "intestazioneMaxRighe": 7,
+    "nature": ["N4", "N5", "N2", "N1"],
+    "manuali": [
+      { "id": "fpu019", "codice": "019", "cosa": "Stato FPU", "voluto": "FORZA FPU", "come": "Tastiera (programmazione 019) o tastiera remota. Nessun comando di protocollo." },
+      { "id": "eth910", "codice": "910", "cosa": "Canale PC", "voluto": "Ethernet", "come": "Se il programma vi parla in rete, è già Ethernet." },
+      { "id": "ip911", "codice": "911", "cosa": "IP fisso (DHCP spento)", "voluto": "IP fisso", "come": "Tastiera o tastiera remota. Dal PC non si distingue un IP fisso da uno assegnato dal router." },
+      { "id": "cassetto520", "codice": "520", "cosa": "Cassetto solo con i contanti", "voluto": "Metodo 1 (contanti) apre, gli altri no", "come": "Tastiera o configuratore Custom. Nessun comando di protocollo." }
+    ],
+    "registra": "Intervento del committente Flatpay. La cassa non entra nel parco del CRM (prossimo passo).",
+    "firmwareUltimo": null,
+    "etichette": ["Aliquote 22·10·5·4 + nature", "019 FORZA FPU", "910 Ethernet", "911 IP fisso", "520 cassetto solo contanti", "Intestazione fino a 7 righe"]
+  },
+  "mooney": {
+    "nome": "Mooney",
+    "nota": "Mooney: nessuna personalizzazione. Niente nel CRM: né cassa né intervento.",
+    "aliquote": null,
+    "intestazioneMaxRighe": null,
+    "nature": null,
+    "manuali": [],
+    "registra": "Niente nel CRM: il modulo firmato resta qui.",
+    "firmwareUltimo": null,
+    "etichette": ["Nessuna personalizzazione: impostazioni standard"]
+  }
+}
