@@ -42,7 +42,7 @@ test('CASSE PREPARATE: la pagina funziona SENZA cassa collegata, la scheda è in
     assert.equal(r.collegata, null); assert.equal(r.casse.length, 3)
     const s = await call('GET', 'casse/scheda?matricola=AAA111')
     assert.equal(s.nomeProfilo, 'Flatpay'); assert.equal(s.dati.esercente, 'BAR ROMA'); assert.equal(s.registro.length, 2)
-    assert.ok(s.righe.find((x) => x.riga === '1.1').si)
+    assert.ok(Array.isArray(s.righe))
     assert.match((await call('GET', 'casse/scheda?matricola=../x')).errore, /sconosciuta/)
     assert.match((await call('GET', 'casse/scheda?matricola=ZZZ999')).errore, /sconosciuta/)
     await call('POST', 'casse/nota', { matricola: 'AAA111', nota: 'Fatto tutto' })

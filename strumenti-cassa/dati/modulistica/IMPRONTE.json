@@ -1,0 +1,5 @@
+{
+  "nota": "sha256 dei due PDF depositati, identici byte per byte a quelli di docs/ged-service-tech/modulistica/ e crm-core/resources/modulistica/ del CRM. Se un file non corrisponde, il modulo NON si genera.",
+  "MOD_10.1_10.2_RT_SIGILLO_INTEGRO_Rev2023-10-10.pdf": "c1a0127cb1fa6edc47227a1b1703a087bd7be19c369a09e9aa5d40c423d89e37",
+  "MOD_10.3_RT_PRIVO_SIGILLO_Rev0_2023-10-10.pdf": "66fd3bfab9bd275e6b03df7af6ab1e5c6041de61692e606b5b358356401b5273"
+}

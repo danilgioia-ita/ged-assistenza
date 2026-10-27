@@ -1,0 +1,171 @@
+{
+ "modello": "10.3",
+ "soloRapporto": false,
+ "sigilloPresente": "no",
+ "dati": {
+  "richiesta_numero": "261",
+  "richiesta_data": "27/10/2026",
+  "richiesta_ora": "09:30",
+  "cliente": "MINIMARKET DI RAZA ALI",
+  "sede_legale": {
+   "indirizzo": "VIA SALVATOR ROSA 76",
+   "cap": "80135",
+   "comune": "NAPOLI",
+   "provincia": "NA"
+  },
+  "sede": "Pizzeria",
+  "ubicazione": {
+   "indirizzo": "VIA SALVATOR ROSA 76",
+   "cap": "80135",
+   "comune": "NAPOLI",
+   "provincia": "NA"
+  },
+  "partita_iva": "11142291217",
+  "codice_fiscale_cliente": null,
+  "sdi": "M5UXCR1",
+  "pec": "kammor@pec.it",
+  "marca": "CUSTOM",
+  "modello": "K3F-N",
+  "matricola": "96IKN014404",
+  "firmware_ultimo": "15.04.05",
+  "firmware_installato": "15.04.05",
+  "contratto_fino_al": "2027-03-15",
+  "tecnico_nome": "Ercole Danilo Gioia",
+  "tecnico_sigillo": "GED01",
+  "tecnico_firma": null,
+  "cliente_firma": "firma-palette.png",
+  "cliente_firmatario": "Mimmo Esposito",
+  "descrizione": "Verificazione periodica RT",
+  "ultima_chiusura": 4,
+  "data": "27/10/2026",
+  "scadenza": null
+ },
+ "risposte": {
+  "sigillo_presente": "no",
+  "sigillo_tipo": null,
+  "area_pubblica": "no",
+  "versione_identificata": "15.04.05",
+  "documento_chiusura": "0004",
+  "esito": "negativo",
+  "luogo": "remoto",
+  "riferimento": "abbonamento",
+  "versione_installata": "15.04.05"
+ },
+ "risposteSalvate": {
+  "sigillo_presente": "no",
+  "sigillo_tipo": "percussione",
+  "area_pubblica": "no",
+  "versione_identificata": "15.04.05",
+  "documento_chiusura": "0004",
+  "esito": "positivo",
+  "luogo": "cliente",
+  "riferimento": "pagamento"
+ },
+ "voci": [
+  [
+   "1.1",
+   "si"
+  ],
+  [
+   "1.2",
+   "si"
+  ],
+  [
+   "2.1",
+   "si"
+  ],
+  [
+   "2.2",
+   "si"
+  ],
+  [
+   "2.3",
+   "si"
+  ],
+  [
+   "3.1",
+   "si"
+  ],
+  [
+   "3.2",
+   "si"
+  ],
+  [
+   "3.3",
+   "si"
+  ],
+  [
+   "3.4",
+   "si"
+  ],
+  [
+   "3.5",
+   "si"
+  ],
+  [
+   "3.6",
+   "no"
+  ],
+  [
+   "3.7",
+   "si"
+  ],
+  [
+   "3.8",
+   "si"
+  ],
+  [
+   "3.9",
+   "si"
+  ],
+  [
+   "3.10",
+   "si"
+  ],
+  [
+   "3.11",
+   "si"
+  ],
+  [
+   "3.12",
+   "si"
+  ],
+  [
+   "3.13",
+   "si"
+  ],
+  [
+   "3.14",
+   "no"
+  ],
+  [
+   "3.15",
+   "si"
+  ],
+  [
+   "3.16",
+   "si"
+  ],
+  [
+   "3.17",
+   "si"
+  ],
+  [
+   "4.1",
+   "si"
+  ],
+  [
+   "4.2",
+   "si"
+  ],
+  [
+   "4.3",
+   "si"
+  ]
+ ],
+ "areePubblicheDaCompilare": false,
+ "interventiRichiesti": [
+  "attivazione",
+  "firmware"
+ ]
+}

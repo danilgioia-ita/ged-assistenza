@@ -1,0 +1,157 @@
+{
+ "modello": "10.2",
+ "soloRapporto": false,
+ "sigilloPresente": "si",
+ "dati": {
+  "richiesta_numero": "261",
+  "richiesta_data": "27/10/2026",
+  "richiesta_ora": "09:30",
+  "cliente": "KAMMOR PIZZERIA E FRIGGITORIA DA ALE E MIMMO",
+  "sede_legale": {
+   "indirizzo": "VIA SALVATOR ROSA 76",
+   "cap": "80135",
+   "comune": "NAPOLI",
+   "provincia": "NA"
+  },
+  "sede": "Pizzeria",
+  "ubicazione": {
+   "indirizzo": "VIA SALVATOR ROSA 76",
+   "cap": "80135",
+   "comune": "NAPOLI",
+   "provincia": "NA"
+  },
+  "partita_iva": "11130901215",
+  "codice_fiscale_cliente": null,
+  "sdi": "M5UXCR1",
+  "pec": "kammor@pec.it",
+  "marca": "CUSTOM",
+  "modello": "K3F-N",
+  "matricola": "96IKN014404",
+  "firmware_ultimo": "15.04.05",
+  "firmware_installato": "15.04.05",
+  "contratto_fino_al": null,
+  "tecnico_nome": "Ercole Danilo Gioia",
+  "tecnico_sigillo": "GED01",
+  "tecnico_firma": "firma-tecnico.png",
+  "cliente_firma": "firma-cliente.png",
+  "cliente_firmatario": "Mimmo Esposito",
+  "descrizione": "Verificazione periodica RT",
+  "ultima_chiusura": 4,
+  "data": "27/10/2026",
+  "scadenza": "10/2028"
+ },
+ "risposte": {
+  "sigillo_presente": "si",
+  "sigillo_tipo": "percussione",
+  "area_pubblica": "no",
+  "versione_identificata": "15.04.05",
+  "documento_chiusura": "0004",
+  "esito": "positivo",
+  "luogo": "cliente",
+  "riferimento": "pagamento"
+ },
+ "risposteSalvate": {
+  "sigillo_presente": "si",
+  "sigillo_tipo": "percussione",
+  "area_pubblica": "no",
+  "versione_identificata": "15.04.05",
+  "documento_chiusura": "0004",
+  "esito": "positivo",
+  "luogo": "cliente",
+  "riferimento": "pagamento"
+ },
+ "voci": [
+  [
+   "1.1",
+   "si"
+  ],
+  [
+   "1.2",
+   "si"
+  ],
+  [
+   "1.5",
+   "si"
+  ],
+  [
+   "1.6",
+   "si"
+  ],
+  [
+   "1.7",
+   "si"
+  ],
+  [
+   "2.1",
+   "si"
+  ],
+  [
+   "2.2",
+   "si"
+  ],
+  [
+   "2.3",
+   "si"
+  ],
+  [
+   "2.4",
+   "no"
+  ],
+  [
+   "2.5",
+   "si"
+  ],
+  [
+   "2.6",
+   "si"
+  ],
+  [
+   "2.7",
+   "si"
+  ],
+  [
+   "2.8",
+   "si"
+  ],
+  [
+   "2.9",
+   "si"
+  ],
+  [
+   "2.10",
+   "si"
+  ],
+  [
+   "2.11",
+   "si"
+  ],
+  [
+   "2.12",
+   "si"
+  ],
+  [
+   "2.13",
+   "si"
+  ],
+  [
+   "2.14",
+   "si"
+  ],
+  [
+   "4.1",
+   "si"
+  ],
+  [
+   "4.2",
+   "si"
+  ],
+  [
+   "4.3",
+   "si"
+  ]
+ ],
+ "areePubblicheDaCompilare": false,
+ "interventiRichiesti": [
+  "verifica_periodica"
+ ]
+}

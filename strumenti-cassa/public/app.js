@@ -36,6 +36,8 @@ function avviso(testo, tipo = 'info', dettaglio) {
     h('div', null, testo, dettaglio?.manuale && dettaglio.manuale !== dettaglio.spiegazione ? h('div', { class: 'piccolo' }, 'Manuale: ' + dettaglio.manuale) : null),
     h('button', { onclick: () => m.remove() }, 'chiudi'))
   box.prepend(m)
+  m.dataset.tipo = tipo
+  avviso.ultimo = m
   while (box.children.length > 3) box.lastChild.remove()
   if (tipo === 'bene') setTimeout(() => m.remove(), 12000)
 }
@@ -93,7 +95,7 @@ function disegnaCasse() {
       h('div', { class: 'griglia' }, Object.entries(sc.dati).filter(([, v]) => v).map(([k, v]) => h('div', { class: 'spia' }, h('div', { class: 't' }, h('span', { class: 'piccolo' }, k), h('b', null, v))))),
       h('div', { class: 'campo' }, h('label', { for: 'nota-c' }, 'Nota (cosa è fatto e cosa resta)'), h('textarea', { id: 'nota-c', rows: 4, style: 'font-size:14px;padding:8px;border:1px solid #b9c3cd;border-radius:6px', oninput: (e) => { sc.nota = e.target.value } }, sc.nota)),
       h('div', { class: 'riga' }, h('button', { class: 'primario', onclick: () => agisci(async () => { await api('POST', 'casse/nota', { matricola: sc.matricola, nota: sc.nota }); await caricaCasse() }, 'Nota salvata') }, 'Salva la nota')),
-      h('div', { class: 'griglia larga' }, sc.righe.filter((r) => r.si).map((r) => h('div', { class: 'check' + (r.verificata ? ' auto' : '') }, h('span', null, h('span', { class: 'nr' }, r.riga + ' '), r.testo)))),
+      h('div', { class: 'griglia larga' }, sc.righe.filter((r) => r.valore === 'si').map((r) => h('div', { class: 'check' + (r.fonte === 'procedura' ? ' auto' : '') }, h('span', null, h('span', { class: 'nr' }, r.riga + ' '), r.testo)))),
       sc.registro.length ? h('pre', { class: 'registro', style: 'max-height:200px' }, sc.registro.join('\n')) : null) : null)
 }
 
@@ -153,7 +155,7 @@ function disegnaProfilo() {
   const ordine = [['diretto', 'Diretto nostro'], ['flatpay', 'Flatpay'], ['mooney', 'Mooney']]
   riempi('s-profilo',
     h('h2', null, '1 · Di chi è la cassa'),
-    h('div', { class: 'riga', role: 'radiogroup', 'aria-label': 'Di chi è la cassa' }, ordine.map(([k, n]) => h('button', { class: 'scelta' + (S.app.profilo === k ? ' on' : ''), role: 'radio', 'aria-checked': String(S.app.profilo === k), onclick: () => agisci(async () => { await api('POST', 'profilo', { profilo: k }); await rileggi() }) }, n))),
+    h('div', { class: 'riga', role: 'radiogroup', 'aria-label': 'Di chi è la cassa' }, ordine.map(([k, n]) => h('button', { class: 'scelta' + (S.app.profilo === k ? ' on' : ''), role: 'radio', 'aria-checked': String(S.app.profilo === k), onclick: () => agisci(async () => { await api('POST', 'profilo', { profilo: k }); await rileggi(); await caricaCasse() }) }, n))),
     h('div', { class: 'griglia larga' },
       h('div', { class: 'riquadro' }, h('span', { class: 'piccolo' }, 'Dove si registra'), h('b', null, p.registra), h('span', { class: 'piccolo' }, p.nota)),
       h('div', { class: 'riquadro' }, h('span', { class: 'piccolo' }, `Profilo «${p.nome}» applicato`), h('div', { class: 'riga', style: 'gap:6px' }, p.etichette.map((t) => h('span', { class: 'chip' }, t))))))
@@ -347,7 +349,8 @@ function passo(p, s, i) {
           h('div', { class: 'campo' }, h('label', { for: 'fm' }, 'Matricola'), h('input', { id: 'fm', type: 'text', autocomplete: 'off', value: inp.matricola || '', placeholder: S.app.matricola, oninput: (e) => { inp.matricola = e.target.value.trim() } })),
           h('div', { class: 'campo' }, h('label', { for: 'fp' }, 'Scrivi: IRREVERSIBILE'), h('input', { id: 'fp', type: 'text', autocomplete: 'off', value: inp.scritta || '', oninput: (e) => { inp.scritta = e.target.value.trim() } })))))
       else if (s.conferma === 'scritta') corpo.push(h('div', { class: 'conferma' }, h('div', null, `Per confermare scrivi la parola ${s.parola}.`), h('div', { class: 'campo', style: 'max-width:240px' }, h('input', { type: 'text', 'aria-label': 'Conferma scritta', autocomplete: 'off', value: inp.scritta || '', placeholder: s.parola, oninput: (e) => { inp.scritta = e.target.value.trim() } }))))
-      if (s.conCampi) corpo.push(h('div', { class: 'riga' }, h('div', { class: 'campo', style: 'width:110px' }, h('label', null, 'Mese prossima'), h('input', { type: 'text', value: inp.mm || '', placeholder: 'MM', oninput: (e) => { inp.mm = e.target.value.trim() } })), h('div', { class: 'campo', style: 'width:110px' }, h('label', null, 'Anno (2 cifre)'), h('input', { type: 'text', value: inp.aa || '', placeholder: 'AA', oninput: (e) => { inp.aa = e.target.value.trim() } })), h('span', { class: 'piccolo' }, 'Vuoti = fra 24 mesi.')))
+      if (s.conCampi) { if (inp.mm === undefined) inp.mm = s.predefiniti?.mm || ''; if (inp.aa === undefined) inp.aa = s.predefiniti?.aa || '' }
+      if (s.conCampi) corpo.push(h('div', { class: 'riga' }, h('div', { class: 'campo', style: 'width:110px' }, h('label', null, 'Mese (MM)'), h('input', { type: 'text', value: inp.mm || '', placeholder: 'MM', oninput: (e) => { inp.mm = e.target.value.trim() } })), h('div', { class: 'campo', style: 'width:110px' }, h('label', null, 'Anno (2 cifre)'), h('input', { type: 'text', value: inp.aa || '', placeholder: 'AA', oninput: (e) => { inp.aa = e.target.value.trim() } })), h('span', { class: 'piccolo' }, 'Proposto: oggi + 24 mesi. Non si può lasciare vuoto.')))
       az.push(eseguiBtn(s.stato === 'errore' ? 'Conferma e rimanda questo passo' : 'Conferma e manda', {}))
     } else if (s.tipo === 'guidato') {
       az.push(h('button', { class: 'primario', onclick: () => rilettura(s, i) }, 'Rileggi la cassa'))
@@ -367,6 +370,7 @@ function passo(p, s, i) {
 }
 
 async function lancia(s, inp) {
+  document.querySelectorAll('#avviso [data-fermo]').forEach((x) => x.remove())
   const input = { conferma: true, ...inp }
   const i = S.proc.passi.findIndex((x) => x.id === s.id)
   if (S.occupato) return
@@ -384,7 +388,8 @@ async function segui() {
     disegnaProcedure()
   }
   const f = S.proc?.passi?.[Math.max(0, (S.proc?.corrente ?? 1) - 1)]
-  if (S.proc?.passi?.some((x) => x.stato === 'errore')) avviso('Il passo si è fermato: guarda l\'errore sotto il passo.', 'male')
+  document.querySelectorAll('#avviso [data-fermo]').forEach((x) => x.remove())
+  if (S.proc?.passi?.some((x) => x.stato === 'errore')) { avviso('Il passo si è fermato: guarda l\'errore sotto il passo.', 'male'); avviso.ultimo.dataset.fermo = '1' }
   else if (f) avviso(`Passo riuscito: ${f.titolo}`, 'bene')
   caricaCheck(); caricaRegistro()
 }
@@ -399,23 +404,78 @@ async function rilettura(s, i) {
   caricaCheck(); caricaRegistro()
 }
 
-// ───────────────────────── check-list ─────────────────────────
+// ───────────────────────── check-list ufficiale ─────────────────────────
+// È il modulo DEPOSITATO (Mod. 10.1 + 10.2/10.3): il PDF originale compilato, identico a quello del CRM. Qui si risponde; il foglio non si ridisegna.
+async function salvaCheck(corpo) { S.check = await api('POST', 'checklist', corpo); disegnaCheck(); caricaCasse().catch(() => {}) }
+
+function padFirma(chi, presente) {
+  const canvas = h('canvas', { width: 400, height: 160, style: 'border:1px dashed #b9c3cd;border-radius:8px;background:#fff;touch-action:none;max-width:100%' })
+  const ctx = canvas.getContext('2d')
+  ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.strokeStyle = '#0b1b4d'
+  let giu = false, toccato = false
+  const punto = (e) => { const r = canvas.getBoundingClientRect(); return [(e.clientX - r.left) * canvas.width / r.width, (e.clientY - r.top) * canvas.height / r.height] }
+  canvas.addEventListener('pointerdown', (e) => { giu = true; toccato = true; canvas.setPointerCapture(e.pointerId); const [x, y] = punto(e); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 0.1, y + 0.1); ctx.stroke() })
+  canvas.addEventListener('pointermove', (e) => { if (!giu) return; const [x, y] = punto(e); ctx.lineTo(x, y); ctx.stroke() })
+  const su = () => { giu = false }
+  canvas.addEventListener('pointerup', su); canvas.addEventListener('pointercancel', su)
+  return h('div', { class: 'riquadro' },
+    h('b', null, chi === 'cliente' ? 'Firma del cliente (col dito)' : 'Firma del tecnico'),
+    h('span', { class: presente ? 'ok-t' : 'piccolo' }, presente ? 'Firma salvata: finisce nel suo riquadro del modulo.' : 'Nessuna firma: il riquadro del modulo esce vuoto, da firmare a penna.'),
+    canvas,
+    h('div', { class: 'riga' },
+      h('button', { class: 'primario', onclick: () => agisci(async () => { if (!toccato) throw new Error('Il riquadro è vuoto: firma prima.'); await api('POST', 'checklist/firma', { chi, png: canvas.toDataURL('image/png') }); await caricaCheck() }, 'Firma salvata') }, 'Salva la firma'),
+      h('button', { onclick: () => { ctx.clearRect(0, 0, canvas.width, canvas.height); toccato = false } }, 'Pulisci'),
+      presente ? h('button', { onclick: () => agisci(async () => { await api('POST', 'checklist/firma', { chi, cancella: true }); await caricaCheck() }, 'Firma tolta') }, 'Togli la firma salvata') : null))
+}
+
 function disegnaCheck() {
   const c = S.check
   if (!c || !S.app?.collegata) return riempi('s-checklist')
-  const salva = () => agisci(async () => { S.check = await api('POST', 'checklist', { dati: c.dati, spunte: Object.fromEntries(c.righe.map((r) => [r.riga, r.si])) }); disegnaCheck() }, 'Check-list salvata')
+  const R = c.risposte
+  const sel = (id, et, valori, corrente, onchange, vuoto = '— scegli —') => h('div', { class: 'campo' }, h('label', { for: id }, et),
+    h('select', { id, onchange: (e) => onchange(e.target.value) }, h('option', { value: '' }, vuoto), Object.entries(valori).map(([k, n]) => h('option', { value: k, selected: k === corrente }, n))))
+  const rispondi = (k) => (v) => agisci(() => salvaCheck({ risposte: { [k]: v } }))
+  const testoR = (id, et, k, valore) => h('div', { class: 'campo' }, h('label', { for: id }, et), h('input', { id, type: 'text', maxlength: 40, value: valore || '', onchange: (e) => agisci(() => salvaCheck({ risposte: { [k]: e.target.value } })) }))
+  const gruppi = {}
+  for (const [k, et, g, obbl] of c.campi) (gruppi[g] = gruppi[g] || []).push([k, et, obbl])
+  const colFonte = { procedura: 'var(--blu)', tecnico: 'var(--verde)', proposta: '#8a5a00' }
+  const nomeFonte = { procedura: 'verificata dalla procedura', tecnico: 'risposta tua', proposta: 'proposta: controlla' }
+  const btn = (r, v) => h('button', { class: 'pillola' + (r.valore === v ? ' on' : ''), style: `min-height:36px;padding:0 14px;${r.valore === v ? `background:${colFonte[r.fonte] || 'var(--blu)'};border-color:${colFonte[r.fonte] || 'var(--blu)'}` : ''}`, 'aria-pressed': String(r.valore === v), onclick: () => agisci(() => salvaCheck({ voci: { [r.numero]: r.valore === v && r.fonte === 'tecnico' ? '' : v } })) }, v === 'si' ? 'SÌ' : 'NO')
   riempi('s-checklist',
-    h('div', { class: 'riga fra' }, h('h2', null, '5 · Check-list Mod. 10.1 + 10.2'), h('span', { class: 'tenue' }, 'Blu = l\'ha verificato la procedura · grigio = lo spunti tu')),
-    h('div', { class: 'griglia' }, c.campi.map(([k, et]) => h('div', { class: 'campo' }, h('label', { for: 'cl-' + k }, et), h('input', { id: 'cl-' + k, type: 'text', value: c.dati[k] || '', maxlength: k === 'nota' ? 50 : 120, oninput: (e) => { c.dati[k] = e.target.value } })))),
-    h('div', { class: 'griglia larga' }, c.righe.map((r) => h('label', { class: 'check' + (r.verificata ? ' auto' : '') },
-      h('input', { type: 'checkbox', checked: r.si, disabled: r.verificata && r.si, onchange: (e) => { r.si = e.target.checked } }),
-      h('span', null, h('span', null, h('span', { class: 'nr' }, r.riga + ' '), r.testo), h('div', { class: 'ruolo', style: `color:${r.verificata ? 'var(--blu)' : 'var(--tenue)'}` }, r.chi === 'procedura' ? (r.verificata ? 'verificato dalla procedura' : 'non ancora verificata dalla procedura (puoi spuntarla tu)') : 'spunta del tecnico'))))),
+    h('div', { class: 'riga fra' }, h('h2', null, `5 · Check-list ufficiale — Mod. 10.1 + 10.${c.modello === '10.3' ? '3' : '2'}`), h('span', { class: 'tenue' }, 'È il modulo depositato: il PDF originale, compilato. Identico a quello del CRM.')),
+    c.precompilata ? h('div', { class: 'msg info' }, h('div', null, 'Righe PROPOSTE su SÌ (in ambra): controlla e correggi quello che non torna. La firma e la responsabilità sono tue.'), h('button', { onclick: () => agisci(async () => { S.check = await api('POST', 'checklist/conferma-tutte-si'); disegnaCheck() }, 'Righe confermate') }, 'Conferma tutte SÌ')) : null,
+    ...c.avvisi.map((x) => h('div', { class: 'msg info' }, x)),
+    c.mancano.length ? h('div', { class: 'msg male', role: 'alert' }, h('div', null, h('b', null, 'Il modulo ufficiale non si genera finché mancano: '), h('ul', { style: 'margin:6px 0 0;padding-left:20px;font-weight:500' }, c.mancano.map((m) => h('li', null, m.cosa))))) : h('div', { class: 'msg bene' }, 'Tutti i campi obbligatori ci sono: il modulo ufficiale si può generare.'),
+    h('h3', null, 'Sigillo, intervento e esito'),
+    h('div', { class: 'griglia' },
+      sel('c-sp', 'Riga 1.3 — Sigillo fiscale presente (decide il modulo: 10.2 / 10.3)', { si: 'Sì (Mod. 10.2)', no: 'No (Mod. 10.3)' }, R.sigillo_presente, rispondi('sigillo_presente'), '—'),
+      sel('c-st', 'Riga 1.4 — Tipo di sigillo', c.tipiSigillo, R.sigillo_tipo, rispondi('sigillo_tipo')),
+      sel('c-ap', 'RT su area pubblica', { no: 'No: sede fissa', si: 'Sì: area pubblica' }, R.area_pubblica, rispondi('area_pubblica'), '—'),
+      sel('c-in', 'Intervento richiesto', { verifica: 'Verifica periodica RT', attivazione: 'Attivazione e verifica periodica RT (cassa nuova)' }, c.salvate.intervento || 'verifica', rispondi('intervento'), '—'),
+      sel('c-es', `Esito${c.esitoProposto ? ' (proposto: positivo)' : ''}`, { positivo: 'Positivo', negativo: 'Negativo' }, R.esito, rispondi('esito')),
+      sel('c-lu', 'Luogo esecuzione intervento', c.luoghi, R.luogo, rispondi('luogo'), '— non indicato —'),
+      sel('c-ri', 'Riferimenti commerciali', c.riferimenti, R.riferimento, rispondi('riferimento'), '— non indicato —'),
+      testoR('c-vi', 'Versione firmware identificata sul RT', 'versione_identificata', R.versione_identificata),
+      testoR('c-vn', 'Versione firmware installata (se aggiornato)', 'versione_installata', R.versione_installata),
+      testoR('c-dg', 'N. documento gestionale di chiusura', 'documento_chiusura', R.documento_chiusura)),
+    h('label', { class: 'riga', style: 'color:var(--testo);font-size:14px' }, h('input', { type: 'checkbox', style: 'width:20px;height:20px', checked: c.conAggiornamento, onchange: (e) => agisci(() => salvaCheck({ risposte: { aggiornamento_firmware: e.target.checked } })) }), 'Il firmware è stato aggiornato in questo intervento (2.3 NO, 2.4 SÌ)'),
+    h('h3', null, 'Dati del modulo'),
+    Object.entries(gruppi).map(([g, campi]) => h('div', { class: 'riquadro' }, h('b', null, g),
+      h('div', { class: 'griglia' }, campi.map(([k, et, obbl]) => h('div', { class: 'campo' }, h('label', { for: 'cl-' + k }, et + (obbl ? ' *' : '')),
+        h('input', { id: 'cl-' + k, type: 'text', maxlength: 120, value: c.dati[k] || '', onchange: (e) => agisci(() => salvaCheck({ dati: { [k]: e.target.value } })) })))))),
+    h('h3', null, 'Le righe del modulo'),
+    c.righe.map((s) => h('div', { class: 'riquadro' }, h('b', null, s.sezione + (s.ambulanti ? ' (sempre facoltativa)' : '')),
+      s.righe.map((r) => h('div', { class: 'check', style: 'justify-content:space-between;flex-wrap:wrap' },
+        h('span', { style: 'flex:1 1 320px' }, h('span', { class: 'nr' }, r.numero + ' '), r.testo, r.nota ? h('div', { class: 'piccolo' }, r.nota) : null, r.valore ? h('div', { class: 'ruolo', style: `color:${colFonte[r.fonte]}` }, nomeFonte[r.fonte]) : h('div', { class: 'ruolo', style: 'color:var(--tenue)' }, 'senza risposta')),
+        h('span', { class: 'riga', style: 'gap:6px;flex-wrap:nowrap' }, btn(r, 'si'), btn(r, 'no')))))),
+    h('h3', null, 'Firme'),
+    h('div', { class: 'griglia larga' }, padFirma('cliente', c.firme.cliente), padFirma('tecnico', c.firme.tecnico)),
     h('div', { class: 'riga' },
-      h('button', { class: 'primario', onclick: salva }, 'Salva'),
-      h('button', { class: 'contorno', onclick: async () => { await salva(); window.open(BASE + 'api/checklist/stampa', '_blank', 'noopener') } }, 'Apri la pagina stampabile'),
-      h('button', { class: 'contorno', onclick: async () => { await salva(); try { const t = await (await fetch(BASE + 'api/checklist/testo')).text(); S.testoCrm = t; try { await navigator.clipboard.writeText(t); avviso('Testo copiato: incollalo nel GST del CRM', 'bene') } catch { avviso('Non riesco a copiare da solo: seleziona il testo qui sotto', 'info') } disegnaCheck() } catch (e) { avviso(e.message, 'male') } } }, 'Copia il testo per il GST del CRM')),
+      h('button', { class: 'primario', style: 'min-height:52px;font-size:16px', onclick: () => agisci(async () => { await caricaCheck(); if (S.check.mancano.length) throw new Error('Il modulo non si genera: mancano ' + S.check.mancano.map((m) => m.cosa).join('; ')); window.open(BASE + 'api/modulo-ufficiale.pdf', '_blank', 'noopener'); setTimeout(caricaRegistro, 1500) }) }, 'Scarica il modulo ufficiale (PDF)'),
+      h('button', { class: 'contorno', onclick: async () => { try { const t = await (await fetch(BASE + 'api/checklist/testo')).text(); S.testoCrm = t; try { await navigator.clipboard.writeText(t); avviso('Appunto copiato (NON è il modulo): incollalo nel GST del CRM', 'bene') } catch { avviso('Non riesco a copiare da solo: seleziona il testo qui sotto', 'info') } disegnaCheck() } catch (e) { avviso(e.message, 'male') } } }, 'Copia l\'appunto per il GST (NON è il modulo)')),
+    h('span', { class: 'piccolo' }, 'Il PDF si salva anche nell\'archivio della cassa: ~/Library/Application Support/GED Assistance/strumenti-cassa/moduli/' + S.app.matricola + '/'),
     S.testoCrm ? h('pre', { class: 'registro', style: 'max-height:260px' }, S.testoCrm) : null,
-    h('div', { class: 'riquadro' }, h('b', null, 'Prossimo passo (non ancora fatto)'), h('span', { class: 'tenue' }, 'La firma del cliente a distanza e la scrittura dell\'esito nel GST del CRM non si fanno ancora da qui. Per ora: stampa o salva in PDF la pagina, fai firmare il cliente, e incolla il testo riepilogativo nell\'intervento del CRM.')))
+    h('div', { class: 'riquadro' }, h('b', null, 'Prossimo passo (non ancora fatto)'), h('span', { class: 'tenue' }, 'La firma del cliente a distanza e la scrittura dell\'esito nel GST del CRM non si fanno ancora da qui. Nel CRM, per un cliente esterno (Flatpay), l\'intervento si segna solo come completato.')))
 }
 
 // ───────────────────────── registro e impostazioni ─────────────────────────
@@ -437,7 +497,7 @@ function disegnaImpostazioni() {
       h('div', { class: 'campo' }, h('label', { for: 'imp-n' }, 'Tecnico'), h('input', { id: 'imp-n', type: 'text', value: v.nome, oninput: (e) => { v.nome = e.target.value } })),
       h('div', { class: 'campo' }, h('label', { for: 'imp-cf' }, 'Codice fiscale del tecnico (16 caratteri)'), h('input', { id: 'imp-cf', type: 'text', maxlength: 16, value: v.cf, oninput: (e) => { v.cf = e.target.value.toUpperCase() } })),
       h('div', { class: 'campo' }, h('label', { for: 'imp-p' }, 'P.IVA del laboratorio (11 cifre)'), h('input', { id: 'imp-p', type: 'text', maxlength: 11, value: v.piva, oninput: (e) => { v.piva = e.target.value } }))),
-    h('div', { class: 'riga' }, h('button', { onclick: () => agisci(async () => { S.app = await api('POST', 'impostazioni', { tecnico: { cf: v.cf, nome: v.nome }, laboratorio: { piva: v.piva } }); disegnaTutto() }, 'Impostazioni salvate') }, 'Salva'), h('span', { class: 'piccolo' }, 'Si usano nell\'intervento tecnico della verificazione e nei dati del modulo.')))
+    h('div', { class: 'riga' }, h('button', { onclick: () => agisci(async () => { S.app = await api('POST', 'impostazioni', { tecnico: { cf: v.cf, nome: v.nome }, laboratorio: { piva: v.piva } }); disegnaTutto(); await caricaCasse() }, 'Impostazioni salvate') }, 'Salva'), h('span', { class: 'piccolo' }, 'Si usano nell\'intervento tecnico della verificazione e nei dati del modulo.')))
 }
 
 function disegnaPiede() {

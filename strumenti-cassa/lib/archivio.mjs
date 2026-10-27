@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { nomeSicuro } from './registro.mjs'
 
 export const IMPOSTAZIONI_DI_PARTENZA = {
-  tecnico: { nome: 'Ercole Danilo Gioia', cf: 'GIORLD84C23A024D' },
+  tecnico: { nome: 'Ercole Danilo Gioia', cf: 'GIORLD84C23A024D', sigillo: 'GED01' },
   laboratorio: { nome: 'GED Service', piva: '07300661217' },
   ultimaIp: '',
 }
@@ -24,7 +24,7 @@ export function creaArchivio(cartella) {
       return { ...IMPOSTAZIONI_DI_PARTENZA, ...l, tecnico: { ...IMPOSTAZIONI_DI_PARTENZA.tecnico, ...(l.tecnico || {}) }, laboratorio: { ...IMPOSTAZIONI_DI_PARTENZA.laboratorio, ...(l.laboratorio || {}) } }
     },
     salvaImpostazioni(i) { scrivi(fImp, i); return i },
-    cassa(m) { return { profilo: 'diretto', spunte: {}, intestazioneVoluta: null, checklist: { dati: {}, spunte: {} }, ...leggi(fCassa(m), {}) } },
+    cassa(m) { return { profilo: 'diretto', spunte: {}, intestazioneVoluta: null, checklist: { dati: {}, spunte: {}, risposte: {} }, ...leggi(fCassa(m), {}) } },
     salvaCassa(m, o) { scrivi(fCassa(m), o); return o },
     /** Le casse preparate: un file cassa-<matricola>.json ciascuna; l'ultima attività dal registro <matricola>.log. */
     elenco() {
@@ -46,7 +46,7 @@ export function creaArchivio(cartella) {
         }
         const sp = { ...(c.spunte || {}), ...(c.checklist?.spunte || {}) }
         out.push({
-          matricola, profilo: c.profilo, esercente: c.checklist?.dati?.esercente || '', ip: c.ip || '', nota: c.nota || '',
+          matricola, profilo: c.profilo, esercente: c.checklist?.dati?.cliente || c.checklist?.dati?.esercente || c.esercente || '', ip: c.ip || '', nota: c.nota || '',
           ultimaAttivita: ultima?.testo || null, _ordine: ultima?.ordine || '', vp: c.vp || null,
           spuntate: Object.values(sp).filter(Boolean).length, righeVerificate: Object.keys(c.checklist?.auto || {}).length,
         })

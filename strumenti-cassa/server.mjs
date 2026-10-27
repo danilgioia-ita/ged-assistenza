@@ -24,11 +24,16 @@ import { Cassa, ErroreCassa, CassaErrore, indirizzoPrivato } from './lib/cassa.m
 import { creaRegistro, cartellaDati, oraItaliana } from './lib/registro.mjs'
 import { creaArchivio, cfValido, pivaValida } from './lib/archivio.mjs'
 import { creaWeb, leggiIndice, leggiCampi, TASTI, WebErrore } from './lib/web.mjs'
-import { leggiCassa, leggiWeb, valuta } from './lib/stato.mjs'
+import { leggiCassa, leggiWeb, valuta, conRiprova, interpreta1002, interpreta1104 } from './lib/stato.mjs'
 import { impostaIntestazione, impostaAliquote, impostaOra, preparaRighe, STILI, ProgrammaErrore } from './lib/programma.mjs'
+import { leggiStatus } from './lib/web.mjs'
 import { Motore, PassoErrore, descriviErrore } from './lib/procedure.mjs'
 import { cercaInRete } from './lib/rete.mjs'
-import { RIGHE, CAMPI, righeComposte, datiComposti, testoRiepilogo, paginaStampabile } from './lib/checklist.mjs'
+import { baseDaCassa, datiComposti, migraDati, testoAppunto } from './lib/checklist.mjs'
+import { componi, CAMPI, TIPI_SIGILLO, LUOGHI, RIFERIMENTI } from './lib/verifica.mjs'
+import { generaModulo } from './lib/pdf/modulo.mjs'
+import { decodificaPng } from './lib/pdf/png.mjs'
+import { mkdirSync, writeFileSync, readFileSync as leggiFile, existsSync, unlinkSync } from 'node:fs'
 
 const QUI = dirname(fileURLToPath(import.meta.url))
 const leggiJson = (f) => JSON.parse(readFileSync(join(QUI, 'dati', f), 'utf8'))
@@ -52,12 +57,13 @@ export async function avvia(opz = {}) {
   const ctxMotore = () => ({
     sessione: (lavoro, conferma = {}) => sess.cassa.sessione(lavoro, { conferma }),
     web: () => sess.web,
-    webIndice: async () => { try { return leggiIndice(await sess.web.leggi('/index.htm')) } catch { return null } },
+    webIndice: async () => { try { return leggiIndice(await conRiprova(() => sess.web.leggi('/index.htm'), { attendi })) } catch { return null } },
     impostazioni: () => archivio.impostazioni(),
     matricola: () => sess.matricola,
     firmwareUltimo: () => profiloDi().firmwareUltimo || ultimiFirmware.modelli[sess.modello] || null,
     checklist: {
       auto: (id, x) => { const c = archivio.cassa(sess.matricola); c.checklist.auto = { ...(c.checklist.auto || {}), [id]: x }; archivio.salvaCassa(sess.matricola, c) },
+      firmware: () => ({ installato: sess.firmware, ultimo: profiloDi().firmwareUltimo || ultimiFirmware.modelli[sess.modello] || null }),
       dati: (d) => { const c = archivio.cassa(sess.matricola); c.checklist.dati = { ...c.checklist.dati, ...d }; archivio.salvaCassa(sess.matricola, c) },
     },
     salvaVP: (vp) => { const c = archivio.cassa(sess.matricola); c.vp = vp; archivio.salvaCassa(sess.matricola, c) },
@@ -85,7 +91,7 @@ export async function avvia(opz = {}) {
       const m = String(q.get('matricola') || '')
       if (!/^[A-Za-z0-9]{1,24}$/.test(m) || !archivio.elenco().some((x) => x.matricola === m)) throw new CassaErrore('cassa sconosciuta', 'dati')
       const c = archivio.cassa(m)
-      return { matricola: m, profilo: c.profilo, nomeProfilo: profili[c.profilo]?.nome, ip: c.ip || '', nota: c.nota || '', vp: c.vp || null, dati: c.checklist?.dati || {}, righe: righeComposte(c.checklist || {}), spunte: c.spunte || {}, registro: registro.coda(m, 40) }
+      return { matricola: m, profilo: c.profilo, nomeProfilo: profili[c.profilo]?.nome, ip: c.ip || '', nota: c.nota || '', vp: c.vp || null, dati: c.checklist?.dati || {}, righe: componi({ salvate: c.checklist?.risposte || {}, auto: c.checklist?.auto || {}, dati: migraDati(c.checklist?.dati), vp: c.vp || null }).righe.flatMap((s) => s.righe).filter((r) => r.valore && r.fonte !== 'proposta'), spunte: c.spunte || {}, registro: registro.coda(m, 40) }
     },
     async 'POST casse/nota'(b) {
       const m = String(b?.matricola || '')
@@ -109,13 +115,14 @@ export async function avvia(opz = {}) {
       sess.web = creaWeb({ ip, matricola: letto.matricola, porta: sess.portaWeb, registro, attesaTastoMs })
       sess.modello = (/(K3[A-Z0-9-]*)/.exec(letto.p1013) || [])[1] || null
       sess.firmware = (/(\d{1,2}\.\d{2}\.\d{2})/.exec(letto.p1013) || [])[1] || null
+      sess.baseLetta = null
       sess.motore = new Motore(ctxMotore())
       { const c = archivio.cassa(sess.matricola); c.ip = ip; archivio.salvaCassa(sess.matricola, c) }
       const imp = archivio.impostazioni(); imp.ultimaIp = ip; archivio.salvaImpostazioni(imp)
       registro.evento(sess.matricola, `collegata ${ip} (${sess.modello || '?'} ${sess.firmware || '?'})`)
       return azioni['GET stato-app']()
     },
-    async 'POST scollega'() { libera(); Object.assign(sess, { cassa: null, web: null, ip: '', matricola: '', modello: null, firmware: null, motore: null, ultimoStato: null }); return azioni['GET stato-app']() },
+    async 'POST scollega'() { libera(); Object.assign(sess, { cassa: null, web: null, ip: '', matricola: '', modello: null, firmware: null, motore: null, ultimoStato: null, baseLetta: null }); return azioni['GET stato-app']() },
     async 'POST profilo'(b) {
       cassaCollegata()
       if (!profili[b?.profilo]) throw new CassaErrore('profilo sconosciuto', 'dati')
@@ -133,7 +140,9 @@ export async function avvia(opz = {}) {
     },
     async 'GET cassa'() {
       const cassa = cassaCollegata()
-      const [letture, web] = await Promise.all([cassa.sessione((s) => leggiCassa(s)), leggiWeb(sess.web)])
+      // uno dopo l'altro: il web server della cassa è lento se nello stesso momento parla anche il protocollo
+      const letture = await cassa.sessione((s) => leggiCassa(s))
+      const web = await leggiWeb(sess.web, { attendi })
       const a = archivio.cassa(sess.matricola)
       const v = valuta({ letture, web, profilo: profiloDi(), spunte: a.spunte, intestazioneVoluta: a.intestazioneVoluta, ultimiFirmware, adesso: adesso(), vp: a.vp || null })
       sess.ultimoStato = v
@@ -184,25 +193,118 @@ export async function avvia(opz = {}) {
     // check-list
     async 'GET checklist'() {
       cassaCollegata()
-      const a = archivio.cassa(sess.matricola)
-      return { campi: CAMPI, righe: righeComposte(a.checklist), dati: datiComposti(a.checklist, baseChecklist()) }
+      const { v, dati, base } = await verificaCorrente()
+      const c = archivio.cassa(sess.matricola)
+      return {
+        campi: CAMPI, dati, base, righe: v.righe, risposte: v.risposte, modello: v.modello, mancano: v.mancano, avvisi: v.avvisi, precompilata: v.precompilata,
+        esitoProposto: v.esitoProposto, scadenza: v.scadenza, conAggiornamento: v.conAggiornamento, salvate: c.checklist.risposte || {},
+        firme: { tecnico: firmaEsiste('tecnico'), cliente: firmaEsiste('cliente') }, tipiSigillo: TIPI_SIGILLO, luoghi: LUOGHI, riferimenti: RIFERIMENTI,
+        pdfPronto: v.mancano.length === 0,
+      }
     },
     async 'POST checklist'(b) {
       cassaCollegata()
       const a = archivio.cassa(sess.matricola)
-      if (b?.dati) a.checklist.dati = { ...a.checklist.dati, ...Object.fromEntries(CAMPI.map(([k]) => k).filter((k) => k in b.dati).map((k) => [k, String(b.dati[k]).slice(0, k === 'nota' ? 50 : 120)])) }
-      if (b?.spunte) a.checklist.spunte = { ...a.checklist.spunte, ...Object.fromEntries(RIGHE.map(([r]) => r).filter((r) => r in b.spunte).map((r) => [r, !!b.spunte[r]])) }
+      const { base } = await baseChecklist(false)
+      if (b?.dati) {
+        const dati = migraDati(a.checklist.dati)
+        for (const [k] of CAMPI) {
+          if (!(k in b.dati)) continue
+          const v = String(b.dati[k]).slice(0, 120)
+          // uguale a quello dedotto dalla cassa: si lascia «seguire» la cassa; diverso (anche vuoto): è una correzione del tecnico e non si tocca più
+          if (v === (base[k] ?? '')) delete dati[k]; else dati[k] = v
+        }
+        a.checklist.dati = dati
+      }
+      const r = { ...(a.checklist.risposte || {}) }
+      const R = b?.risposte || {}
+      for (const [k, ammessi] of [['sigillo_presente', ['si', 'no']], ['area_pubblica', ['si', 'no']], ['esito', ['positivo', 'negativo']], ['intervento', ['verifica', 'attivazione']], ['sigillo_tipo', Object.keys(TIPI_SIGILLO)], ['luogo', Object.keys(LUOGHI)], ['riferimento', Object.keys(RIFERIMENTI)]]) {
+        if (k in R) { if (ammessi.includes(R[k])) r[k] = R[k]; else delete r[k] }
+      }
+      for (const k of ['versione_identificata', 'versione_installata', 'documento_chiusura']) if (k in R) { const v = String(R[k] ?? '').trim().slice(0, 40); if (v) r[k] = v; else delete r[k] }
+      if ('aggiornamento_firmware' in R) r.aggiornamento_firmware = !!R.aggiornamento_firmware
+      if (b?.voci) {
+        const modello = r.sigillo_presente === 'no' ? '10.3' : '10.2'
+        r.voci = { ...(r.voci || {}) }
+        r.voci[modello] = { ...(r.voci[modello] || {}) }
+        for (const [n, v] of Object.entries(b.voci)) { if (v === 'si' || v === 'no') r.voci[modello][n] = v; else delete r.voci[modello][n] }
+      }
+      r.aggiornata_il = new Date().toISOString()
+      a.checklist.risposte = r
       archivio.salvaCassa(sess.matricola, a)
       return azioni['GET checklist']()
+    },
+    // «Conferma tutte SI» è un gesto del tecnico: le righe ancora proposte diventano risposte sue (la coppia del firmware resta com'è)
+    async 'POST checklist/conferma-tutte-si'() {
+      cassaCollegata()
+      const { v } = await verificaCorrente(false)
+      const a = archivio.cassa(sess.matricola)
+      const r = { ...(a.checklist.risposte || {}) }
+      const mod = v.modello
+      r.voci = { ...(r.voci || {}) }; r.voci[mod] = { ...(r.voci[mod] || {}) }
+      for (const s of v.righe) { if (s.ambulanti) continue; for (const x of s.righe) if (x.valore && x.fonte === 'proposta') r.voci[mod][x.numero] = x.valore }
+      r.aggiornata_il = new Date().toISOString()
+      a.checklist.risposte = r; archivio.salvaCassa(sess.matricola, a)
+      return azioni['GET checklist']()
+    },
+    async 'POST checklist/firma'(b) {
+      cassaCollegata()
+      const chi = b?.chi === 'tecnico' ? 'tecnico' : b?.chi === 'cliente' ? 'cliente' : null
+      if (!chi) throw new CassaErrore('di chi è la firma?', 'dati')
+      const f = percorsoFirma(fileFirma(chi))
+      if (b.cancella) { if (existsSync(f)) unlinkSync(f); return { ok: true } }
+      const m = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(String(b.png || ''))
+      if (!m) throw new CassaErrore('la firma deve essere un\'immagine PNG', 'dati')
+      const buf = Buffer.from(m[1], 'base64')
+      if (buf.length > 600_000 || !decodificaPng(buf)) throw new CassaErrore('la firma non si legge (serve un PNG non interlacciato, non troppo grande)', 'dati')
+      writeFileSync(f, buf)
+      registro.evento(sess.matricola, `firma ${chi} salvata`)
+      return { ok: true }
     },
     async 'GET registro'(_, q) { cassaCollegata(); return { righe: registro.coda(sess.matricola, Math.min(Number(q.get('righe')) || 200, 1000)), file: registro.file(sess.matricola) } },
   }
 
-  const baseChecklist = () => {
-    const i = archivio.impostazioni(); const v = sess.ultimoStato
-    return { matricola: sess.matricola, pivaEsercente: v?.esercente?.piva || '', azzeramenti: v?.chiusure != null ? String(v.chiusure) : '', tecnicoCF: i.tecnico.cf, labPIVA: i.laboratorio.piva }
+  // ───────────────────────── la check-list ufficiale ─────────────────────────
+  const fileFirma = (chi) => (chi === 'tecnico' ? 'firma-tecnico.png' : `firma-cliente-${sess.matricola.replace(/[^A-Za-z0-9]/g, '')}.png`)
+  const percorsoFirma = (nome) => join(cartella, nome)
+  const firmaEsiste = (chi) => existsSync(percorsoFirma(fileFirma(chi)))
+  const leggiFirma = (nome) => { const f = percorsoFirma(nome); return /^firma-[A-Za-z0-9.-]+\.png$/.test(nome) && existsSync(f) ? leggiFile(f) : null }
+
+  // I dati del modulo di partenza, dedotti da ciò che la cassa dice (intestazione, 1104, web server). Con un passo in corso
+  // si usa l'ultima lettura: non si mette in coda una lettura dietro a una procedura.
+  async function baseChecklist(fresco = true) {
+    if (fresco && sess.cassa && !sess.motore?.run?.inEsecuzione) {
+      try {
+        const l = await sess.cassa.sessione(async (s) => {
+          const righe = []
+          for (let i = 1; i <= 9; i++) righe.push(interpreta1002(await s.manda('1002' + i))?.testo || '')
+          return { righe, chiusure: interpreta1104(await s.manda('1104'))?.chiusure ?? null }
+        })
+        let webPiva = ''
+        try { webPiva = leggiStatus(await conRiprova(() => sess.web.leggi('/Status.htm'), { attendi, tentativi: 2 }))['CF/PIVA ESERCENTE'] || '' } catch {}
+        sess.baseLetta = { ...l, webPiva }
+      } catch { /* la cassa non risponde: valgono i valori dell'ultima lettura */ }
+    }
+    const r = baseDaCassa({ matricola: sess.matricola, ...(sess.baseLetta || {}), modello: sess.modello || '', firmwareUltimo: profiloDi().firmwareUltimo || ultimiFirmware.modelli[sess.modello] || '', impostazioni: archivio.impostazioni() })
+    if (r.base.cliente) { const c = archivio.cassa(sess.matricola); if (c.esercente !== r.base.cliente) { c.esercente = r.base.cliente; archivio.salvaCassa(sess.matricola, c) } }
+    return r
   }
-  const contestoCl = () => { const a = archivio.cassa(sess.matricola); return { ip: sess.ip, modello: sess.modello, firmware: sess.firmware, profilo: profiloDi().nome, stato: a.checklist, base: baseChecklist() } }
+
+  async function verificaCorrente(fresco = true) {
+    const c = archivio.cassa(sess.matricola)
+    const { base, avvisi: avvisiBase } = await baseChecklist(fresco)
+    const dati = datiComposti(migraDati(c.checklist.dati), base)
+    const imp = archivio.impostazioni()
+    const v = componi({
+      salvate: c.checklist.risposte || {}, auto: c.checklist.auto || {}, dati,
+      firmware: { installato: sess.firmware, ultimo: profiloDi().firmwareUltimo || ultimiFirmware.modelli[sess.modello] || null },
+      firme: { tecnico: firmaEsiste('tecnico') ? fileFirma('tecnico') : null, cliente: firmaEsiste('cliente') ? fileFirma('cliente') : null },
+      vp: c.vp || null, adesso: adesso(),
+    })
+    v.avvisi = [...avvisiBase, ...v.avvisi]
+    return { v, dati, base, c, imp }
+  }
+  const contestoCl = async () => { const { v, dati } = await verificaCorrente(false); return { ip: sess.ip, modello: sess.modello, firmware: sess.firmware, profilo: profiloDi().nome, verifica: v, dati } }
 
   // ───────────────────────── il server ─────────────────────────
   const tokenBuf = Buffer.from(token)
@@ -227,8 +329,24 @@ export async function avvia(opz = {}) {
         const origin = req.headers.origin
         if (origin && origin !== `http://127.0.0.1:${p}` && origin !== `http://localhost:${p}`) return nega(403, 'origine non ammessa')
         const nome = rest.slice(5)
-        if (req.method === 'GET' && nome === 'checklist/stampa') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(paginaStampabile(contestoCl())) }
-        if (req.method === 'GET' && nome === 'checklist/testo') { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(testoRiepilogo(contestoCl())) }
+        if (req.method === 'GET' && nome === 'modulo-ufficiale.pdf') {
+          if (!sess.cassa) return nega(409, 'nessuna cassa collegata')
+          const { v } = await verificaCorrente(false)
+          if (v.mancano.length) return nega(409, 'Il modulo ufficiale non si genera: mancano ' + v.mancano.map((x) => x.cosa).join('; '))
+          const pdf = generaModulo(v.pdf, { firma: leggiFirma })
+          const nomeFile = `${sess.matricola}-VP-${oraItaliana(adesso()).replace(/[^0-9]/g, '').slice(0, 12)}.pdf`
+          const cartellaModuli = join(cartella, 'moduli', sess.matricola.replace(/[^A-Za-z0-9]/g, ''))
+          mkdirSync(cartellaModuli, { recursive: true })
+          writeFileSync(join(cartellaModuli, nomeFile), pdf)
+          registro.evento(sess.matricola, `modulo ufficiale generato: ${join(cartellaModuli, nomeFile)}`)
+          res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${nomeFile}"`, 'Cache-Control': 'no-store' })
+          return res.end(pdf)
+        }
+        if (req.method === 'GET' && nome === 'checklist/testo') {
+          const cx = await contestoCl()
+          res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' })
+          return res.end(testoAppunto(cx))
+        }
         const f = azioni[`${req.method} ${nome}`]
         if (!f) return nega(404, 'azione sconosciuta')
         let corpo = null

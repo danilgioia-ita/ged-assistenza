@@ -15,8 +15,19 @@ Lanciatore: `~/Desktop/Strumenti cassa.command`. Registro per cassa: `~/Library/
 - Solo indirizzi privati. Web server della cassa: solo GET (e i tasti della tastiera remota, da lista chiusa).
 
 ## Cosa c'è
-Collega · profili (Diretto / Flatpay / Mooney in `dati/profili.json`) · stato con spie · programmazione (intestazione, aliquote, data e ora; 019/910/911/520 con tastiera remota e spunte) · procedure (verificazione periodica, chiusura forzata, ciclo fiscale guidato) · check-list Mod. 10.1+10.2 (pagina stampabile e testo per il GST).
+Collega · profili (Diretto / Flatpay / Mooney in `dati/profili.json`) · stato con spie · programmazione (intestazione, aliquote, data e ora; 019/910/911/520 con tastiera remota e spunte) · procedure (verificazione periodica, chiusura forzata, ciclo fiscale guidato) · check-list UFFICIALE Mod. 10.1 + 10.2/10.3 (il PDF depositato compilato, identico a quello del CRM; firma col dito; appunto per il GST che dice di NON essere il modulo).
 Ultimo firmware per modello: `dati/ultimi-firmware.json`.
 
 ## Prossimo passo (non fatto)
 Firma del cliente a distanza, scrittura nel CRM, collegamento al CRM per profili e firmware.
+
+## Il modulo ufficiale (decisione di Danilo, 27/10/2026)
+«La check-list si deve usare per forza quella ufficiale: le due pagine depositate, approvate e depositate AE.» Il PDF si genera da
+`lib/pdf/` (porta in Node di `ModuloUfficiale.php`, `ScrittorePdf.php`, `LettorePdf.php` del CRM) sui PDF originali in
+`dati/modulistica/`, di cui si controlla l'impronta sha256 (`IMPRONTE.json`): un file diverso viene rifiutato. Le regole (10.2 o 10.3 dalla
+riga 1.3, esito mai proposto se c'è un NO, campi obbligatori) sono in `lib/verifica.mjs`. Differenza dal CRM, voluta: le firme non sono
+obbligatorie (senza immagine il riquadro resta vuoto, da firmare a penna).
+
+**Prova di identità col CRM:** `test/fixtures/crm/golden/*.pdf` li ha generati il codice PHP vero del CRM con gli stessi dati degli scenari
+(`test/fixtures/crm/scenari/`); `test/confronto-crm.test.mjs` li rigenera in Node e confronta byte per byte. Per rigenerare i golden
+(solo se cambia il CRM): `php test/confronto-crm/genera-crm.php <crm-core> test/fixtures/crm/scenari test/fixtures/crm/golden test/fixtures/crm/firme`.

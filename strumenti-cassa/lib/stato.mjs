@@ -82,16 +82,28 @@ export async function leggiCassa(s) {
     }
   }
   for (const c of COMANDI) await prova(c, c)
+  // le ricevute delle ultime chiusure: servono se il web server non risponde
+  const nz = interpreta1104(r.raw['1104'])?.chiusure
+  if (nz) for (let z = nz; z > Math.max(0, nz - 3); z--) await prova('1515z' + z, '1515' + '0' + String(z).padStart(4, '0') + '0000')
   for (let i = 1; i <= 9; i++) await prova('1002' + i, '1002' + i)
   const tot = Math.min(Number(r.raw['1023']?.slice(4, 6)) || 11, 11)
   for (let i = 1; i <= tot; i++) await prova('7112' + String(i).padStart(2, '0'), '7112' + String(i).padStart(2, '0'))
   return r
 }
 
-export async function leggiWeb(web) {
+// il web server della cassa è lento a rispondere mentre stampa (DGFE, chiusure): si riprova, una pagina alla volta
+export async function conRiprova(f, { tentativi = 3, attendi = (ms) => new Promise((r) => setTimeout(r, ms)), pausaMs = 1500 } = {}) {
+  let ultimo
+  for (let t = 1; t <= tentativi; t++) {
+    try { return await f() } catch (e) { if (!(e instanceof WebErrore)) throw e; ultimo = e; if (t < tentativi) await attendi(pausaMs) }
+  }
+  throw ultimo
+}
+
+export async function leggiWeb(web, opz = {}) {
   const out = { status: null, indice: null, errore: null }
-  try { out.status = leggiStatus(await web.leggi('/Status.htm')) } catch (e) { if (e instanceof WebErrore) out.errore = e.message; else throw e }
-  try { out.indice = leggiIndice(await web.leggi('/index.htm')) } catch (e) { if (e instanceof WebErrore) out.errore ||= e.message; else throw e }
+  try { out.status = leggiStatus(await conRiprova(() => web.leggi('/Status.htm'), opz)) } catch (e) { if (e instanceof WebErrore) out.errore = e.message; else throw e }
+  try { out.indice = leggiIndice(await conRiprova(() => web.leggi('/index.htm'), opz)) } catch (e) { if (e instanceof WebErrore) out.errore ||= e.message; else throw e }
   return out
 }
 
@@ -146,7 +158,16 @@ export function valuta({ letture, web = {}, profilo, spunte = {}, intestazioneVo
   if (ix.nonInviati != null) {
     const brutti = (ix.nonInviati || 0) + (ix.falliti || 0)
     spia('corrispettivi', 'Corrispettivi', brutti === 0 ? 'Tutti inviati' : `${ix.nonInviati} non inviati, ${ix.falliti ?? '?'} falliti`, brutti === 0 ? 'v' : 'r')
-  } else spia('corrispettivi', 'Corrispettivi', 'non leggibili (web server)', 'g')
+  } else {
+    // il web server tace: si ripiega sulle ricevute 1515 delle ultime chiusure
+    const rec = Object.entries(raw).filter(([k]) => k.startsWith('1515z')).map(([k, v]) => ({ z: Number(k.slice(5)), x: interpreta1515(v) }))
+    const lette = rec.filter((r) => r.x)
+    if (lette.length) {
+      const male = lette.filter((r) => r.x.stato === 'fallito' || r.x.stato === 'senza_risposta')
+      const nota = `dalle ricevute 1515 di ${lette.length} chiusure (il web server non risponde)`
+      spia('corrispettivi', 'Corrispettivi', male.length ? `chiusure ${male.map((r) => r.z).join(', ')}: ${male[0].x.stato === 'fallito' ? 'invio fallito' : 'senza risposta'}` : lette.length < rec.length ? 'Inviate le chiusure lette; altre in invio' : 'Tutte inviate', male.length ? 'r' : lette.length < rec.length ? 'a' : 'v', nota)
+    } else spia('corrispettivi', 'Corrispettivi', 'non leggibili (web server e ricevute 1515)', 'g')
+  }
 
   // ora
   const oc = interpreta1001(raw['1001'])

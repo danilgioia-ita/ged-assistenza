@@ -1,0 +1,56 @@
+{
+ "modello": "10.2",
+ "soloRapporto": true,
+ "sigilloPresente": null,
+ "dati": {
+  "richiesta_numero": "261",
+  "richiesta_data": "27/10/2026",
+  "richiesta_ora": "09:30",
+  "cliente": "KAMMOR PIZZERIA E FRIGGITORIA DA ALE E MIMMO",
+  "sede_legale": {
+   "indirizzo": "VIA SALVATOR ROSA 76",
+   "cap": "80135",
+   "comune": "NAPOLI",
+   "provincia": "NA"
+  },
+  "sede": "Pizzeria",
+  "ubicazione": {
+   "indirizzo": "VIA SALVATOR ROSA 76",
+   "cap": "80135",
+   "comune": "NAPOLI",
+   "provincia": "NA"
+  },
+  "partita_iva": "11130901215",
+  "codice_fiscale_cliente": null,
+  "sdi": "M5UXCR1",
+  "pec": "kammor@pec.it",
+  "marca": "CUSTOM",
+  "modello": "K3F-N",
+  "matricola": "96IKN014404",
+  "firmware_ultimo": "15.04.05",
+  "firmware_installato": "15.04.05",
+  "contratto_fino_al": null,
+  "tecnico_nome": "Ercole Danilo Gioia",
+  "tecnico_sigillo": "GED01",
+  "tecnico_firma": "firma-tecnico.png",
+  "cliente_firma": null,
+  "cliente_firmatario": "Mimmo Esposito",
+  "descrizione": "Disattivazione RT per cessione",
+  "ultima_chiusura": 4,
+  "data": "27/10/2026",
+  "scadenza": null
+ },
+ "risposte": {
+  "luogo": "laboratorio",
+  "riferimento": "garanzia",
+  "area_pubblica": null
+ },
+ "risposteSalvate": {
+  "area_pubblica": "si"
+ },
+ "voci": [],
+ "areePubblicheDaCompilare": false,
+ "interventiRichiesti": [
+  "disattivazione"
+ ]
+}
