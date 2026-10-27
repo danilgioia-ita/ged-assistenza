@@ -33,7 +33,7 @@ import { baseDaCassa, datiComposti, migraDati, testoAppunto } from './lib/checkl
 import { componi, CAMPI, TIPI_SIGILLO, LUOGHI, RIFERIMENTI } from './lib/verifica.mjs'
 import { generaModulo } from './lib/pdf/modulo.mjs'
 import { decodificaPng } from './lib/pdf/png.mjs'
-import { mkdirSync, writeFileSync, readFileSync as leggiFile, existsSync, unlinkSync } from 'node:fs'
+import { readFileSync as leggiFile, existsSync, unlinkSync } from 'node:fs'
 
 const QUI = dirname(fileURLToPath(import.meta.url))
 const leggiJson = (f) => JSON.parse(readFileSync(join(QUI, 'dati', f), 'utf8'))
