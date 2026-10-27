@@ -43,11 +43,12 @@ test('VERIFICAZIONE PERIODICA: la sequenza degli script, comando per comando', a
     mai(a.sim)
     // la chiusura automatica dopo la fine intervento è la 14
     assert.equal(a.sim.statoInterno().chiusure, 14)
-    // la check-list è compilata dalla procedura
+    // la check-list ufficiale è compilata dalla procedura (fonte «procedura»), nelle righe che la procedura verifica davvero
     const cl = await a.chiama('GET', 'checklist')
-    const si = Object.fromEntries(cl.righe.map((x) => [x.riga, x.si]))
-    for (const k of ['2.2', '2.3', '2.4', '2.8', '2.9', '2.10', '2.12', '2.13', '2.14', '4.1', '4.2']) assert.equal(si[k], true, `riga ${k}`)
-    for (const k of ['1.1', '2.5', '2.11', '4.3']) assert.equal(si[k], false, `la riga ${k} la spunta il tecnico`)
+    const rg = Object.fromEntries(cl.righe.flatMap((s) => s.righe).map((x) => [x.numero, x]))
+    for (const k of ['2.2', '2.3', '2.8', '2.9', '2.10', '2.12', '2.13', '2.14', '4.1', '4.2']) { assert.equal(rg[k].fonte, 'procedura', `riga ${k}`); assert.equal(rg[k].valore, 'si', `riga ${k}`) }
+    assert.equal(rg['2.4'].fonte, 'procedura'); assert.equal(rg['2.4'].valore, 'no', 'firmware già aggiornato: nessun aggiornamento')
+    for (const k of ['1.1', '2.5', '2.11', '4.3']) assert.equal(rg[k].fonte, 'proposta', `la riga ${k} la guarda il tecnico`)
     assert.equal(cl.dati.azzeramenti, '14')
   } finally { await a.chiudi() }
 })

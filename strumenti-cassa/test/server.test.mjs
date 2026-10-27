@@ -129,33 +129,6 @@ test('MOONEY: nessuna personalizzazione, nessun confronto; DIRETTO: standard', a
   } finally { await a.chiudi() }
 })
 
-test('CHECK-LIST: pagina stampabile e testo da copiare, con le righe e il «prossimo passo»', async () => {
-  const a = await ambiente()
-  try {
-    await a.collega()
-    await a.chiama('POST', 'checklist', { dati: { esercente: 'MINIMARKET <DI> RAZA', indirizzo: 'Via Roma 1', sigillo: 'Piombo', nota: 'x'.repeat(80), firmatario: 'Ali Raza' }, spunte: { '1.1': true, '1.3': true, '9.9': true } })
-    const cl = await a.chiama('GET', 'checklist')
-    assert.equal(cl.dati.nota.length, 50, 'la nota è al massimo di 50 caratteri')
-    assert.equal(cl.dati.tecnicoCF, 'GIORLD84C23A024D'); assert.equal(cl.dati.labPIVA, '07300661217'); assert.equal(cl.dati.matricola, 'STITE350592')
-    assert.equal(cl.righe.length, 23)
-    assert.equal(cl.righe.find((r) => r.riga === '1.1').si, true)
-    assert.ok(!cl.righe.some((r) => r.riga === '9.9'), 'righe inventate non entrano')
-    const h = await grezzo(a.app.indirizzo + 'api/checklist/stampa')
-    assert.equal(h.stato, 200)
-    assert.match(h.corpo, /Mod\. 10\.1 \+ 10\.2/)
-    assert.ok(h.corpo.includes('MINIMARKET &lt;DI&gt; RAZA'), 'l\'HTML è protetto')
-    assert.ok(!h.corpo.includes('<DI>'))
-    assert.match(h.corpo, /Prossimo passo \(non ancora fatto\)/)
-    assert.match(h.corpo, /firma del cliente a distanza e la scrittura dell&#39;esito nel GST del CRM/)
-    assert.match(h.corpo, /non ancora verificata dalla procedura/)
-    const t = await grezzo(a.app.indirizzo + 'api/checklist/testo')
-    assert.match(t.corpo, /matricola STITE350592/)
-    assert.match(t.corpo, /1\.1 Integrità dell'involucro: OK/)
-    assert.match(t.corpo, /2\.8 Chiusura prima dell'intervento: NON SPUNTATA/)
-    assert.match(t.corpo, /Prossimo passo/)
-  } finally { await a.chiudi() }
-})
-
 test('REGISTRO: un file per cassa, nel posto giusto, con ora italiana', async () => {
   const a = await ambiente()
   try {

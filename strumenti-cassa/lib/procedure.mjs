@@ -56,7 +56,7 @@ const verificaChiusura = (ctx, st) => async () => {
   const r = await ctx.sessione(async (s) => interpreta1104(await s.manda('1104')))
   const att = st.vars.chiusureAttese
   if (att == null) return { ok: false, testo: `1104: ${r?.chiusure} chiusure. Non so da quale numero partivo: guarda la carta.` }
-  return r && r.chiusure === att + 1 ? { ok: true, testo: `la chiusura è stata fatta: ${att} → ${r.chiusure}` } : { ok: false, testo: `le chiusure sono ancora ${r?.chiusure} (partivo da ${att}): la chiusura NON risulta fatta` }
+  return r && r.chiusure === att + 1 ? { ok: true, valore: 'si', testo: `la chiusura è stata fatta: ${att} → ${r.chiusure}` } : { ok: false, testo: `le chiusure sono ancora ${r?.chiusure} (partivo da ${att}): la chiusura NON risulta fatta` }
 }
 
 function rigaVendita(descr, cent) { return '3301' + '1' + '000000000' + '001' + cifre(descr.length, 2) + descr + cifre(cent, 9) + '00' }
@@ -92,15 +92,15 @@ function defVP(ctx) {
           st.vars.chiusure0 = r.chiusure?.chiusure
           st.vars.firmware = r.fw
           const ultimo = ctx.firmwareUltimo(r.fw)
-          ctx.checklist.auto('2.2', { ok: !!r.fw, testo: `Firmware sulla cassa: ${r.fw ?? 'non letto'}` })
-          ctx.checklist.auto('2.3', { ok: !!ultimo && r.fw === ultimo, testo: ultimo ? `È l'ultimo del produttore (${ultimo})` : 'Ultimo del produttore non dichiarato' })
-          ctx.checklist.auto('2.4', { ok: !!ultimo && r.fw === ultimo, testo: !!ultimo && r.fw === ultimo ? 'Aggiornamento firmware: non serviva' : 'Aggiornamento firmware: da fare / da dichiarare' })
+          ctx.checklist.auto('2.2', { ok: !!r.fw, valore: r.fw ? 'si' : undefined, testo: `Firmware sulla cassa: ${r.fw ?? 'non letto'}` })
+          ctx.checklist.auto('2.3', { ok: !!ultimo && r.fw === ultimo, valore: ultimo && r.fw ? (r.fw === ultimo ? 'si' : 'no') : undefined, testo: ultimo ? `È l'ultimo del produttore (${ultimo})` : 'Ultimo del produttore non dichiarato' })
+          ctx.checklist.auto('2.4', { ok: !!ultimo && r.fw === ultimo, valore: ultimo && r.fw === ultimo ? 'no' : undefined, testo: !!ultimo && r.fw === ultimo ? 'Aggiornamento firmware: non serviva' : 'Aggiornamento firmware: da fare / da dichiarare' })
           return `chiusure finora: ${r.chiusure?.chiusure} · firmware ${r.fw ?? '?'}${ultimo && r.fw !== ultimo ? ` (l'ultimo dichiarato è ${ultimo}: la riga 2.4 resta da spuntare a mano)` : ''}`
         },
       },
       {
         id: 'chiusura1', titolo: 'Chiusura prima dell\'intervento', dettaglio: 'Chiusura giornaliera: azzera la giornata, così le prove stanno da sole in quella dopo.', tipo: 'scrive', conferma: 'scritta', parola: 'CHIUSURA', anteprima: () => ['1104', '1012', '20020', '1104'],
-        async esegui(st) { const z = await chiudi(ctx, st); st.vars.z1 = z; ctx.checklist.auto('2.8', { ok: true, testo: `Chiusura prima dell'intervento (Z ${z})` }); return `chiusura ${z} fatta` },
+        async esegui(st) { const z = await chiudi(ctx, st); st.vars.z1 = z; ctx.checklist.auto('2.8', { ok: true, valore: 'si', testo: `Chiusura prima dell'intervento (Z ${z})` }); return `chiusura ${z} fatta` },
         verifica: (st) => verificaChiusura(ctx, st)().then((r) => { if (r.ok) st.vars.z1 = st.vars.chiusureAttese + 1; return r }),
       },
       {
@@ -140,7 +140,7 @@ function defVP(ctx) {
             }
           }, { clic: true })
           const elenco = st.vars.ricevute.map((r) => r.n).join(' e ')
-          ctx.checklist.auto('2.9', { ok: true, testo: `Documenti di prova (n° ${elenco})` })
+          ctx.checklist.auto('2.9', { ok: true, valore: 'si', testo: `Documenti di prova (n° ${elenco})` })
           return `scontrini n° ${elenco}${st.vars.ricevute.length > 2 ? ` — ATTENZIONE: sulla cassa ce ne sono ${st.vars.ricevute.length}, non 2: li annullo tutti` : ''}`
         },
         verifica: (st) => ctx.sessione(async (s) => { const d = interpreta1017(await s.manda('1017')); const a = interpreta1012(await s.manda('1012')); return { ok: false, testo: `Ultimo documento: n° ${d?.numero} da ${d ? (d.totaleCent / 100).toFixed(2) : '?'} €, stato scontrino (1012) = ${a}. Se vedi i due scontrini sulla carta, usa «Considera fatto».` } }),
@@ -168,7 +168,7 @@ function defVP(ctx) {
             }
           }, { clic: true })
           st.vars.ultimoDoc = ultimo?.numero
-          ctx.checklist.auto('2.10', { ok: true, testo: `Annullo dei documenti di prova (n° ${st.vars.ricevute.map((r) => r.n).join(' e ')}, Z ${st.vars.zAnnulli})` })
+          ctx.checklist.auto('2.10', { ok: true, valore: 'si', testo: `Annullo dei documenti di prova (n° ${st.vars.ricevute.map((r) => r.n).join(' e ')}, Z ${st.vars.zAnnulli})` })
           return `annullati i documenti ${st.vars.ricevute.map((r) => r.n).join(' e ')} (ultimo documento: ${ultimo?.numero ?? '?'})`
         },
         verifica: (st) => ctx.sessione(async (s) => {
@@ -176,18 +176,18 @@ function defVP(ctx) {
           const r = st.vars.ricevute || []
           const atteso = r.length ? Math.max(...r.map((x) => x.n)) + r.filter((x) => true).length : null
           if (a !== 0) return { ok: false, testo: `sulla cassa c'è un documento aperto (1012 = ${a})` }
-          if (atteso && d && d.numero >= atteso) { st.vars.ultimoDoc = d.numero; r.forEach((x) => { x.annullato = true }); return { ok: true, testo: `ultimo documento n° ${d.numero}: gli annulli risultano emessi` } }
+          if (atteso && d && d.numero >= atteso) { st.vars.ultimoDoc = d.numero; r.forEach((x) => { x.annullato = true }); return { ok: true, valore: 'si', testo: `ultimo documento n° ${d.numero}: gli annulli risultano emessi` } }
           return { ok: false, testo: `ultimo documento n° ${d?.numero ?? '?'}, ne aspettavo almeno ${atteso ?? '?'}: gli annulli NON risultano tutti emessi` }
         }),
       },
       {
         id: 'chiusura2', titolo: 'Chiusura con le prove dentro', dettaglio: 'La chiusura che contiene gli scontrini di prova e i loro annulli.', tipo: 'scrive', conferma: 'scritta', parola: 'CHIUSURA', anteprima: () => ['1104', '1012', '20020', '1104'],
-        async esegui(st) { const z = await chiudi(ctx, st); st.vars.z2 = z; ctx.checklist.auto('2.12', { ok: true, testo: `Chiusura coerente (Z ${z})` }); return `chiusura ${z} fatta` },
+        async esegui(st) { const z = await chiudi(ctx, st); st.vars.z2 = z; ctx.checklist.auto('2.12', { ok: true, valore: 'si', testo: `Chiusura coerente (Z ${z})` }); return `chiusura ${z} fatta` },
         verifica: (st) => verificaChiusura(ctx, st)().then((r) => { if (r.ok) st.vars.z2 = st.vars.chiusureAttese + 1; return r }),
       },
       {
         id: 'invio2', titolo: 'Invio della chiusura con le prove', dettaglio: 'Di nuovo l\'attesa dell\'Agenzia.', tipo: 'lettura', anteprima: (st) => [`1515 0 ${st.vars.z2 ?? '<Z>'} 0000 (ripetuto)`],
-        async esegui(st) { const x = await attendiInvio(ctx, st, st.vars.z2); ctx.checklist.auto('2.13', { ok: true, testo: `Invio XML con esito positivo (Z ${x.chiusura})` }); return `Z ${x.chiusura}: ${x.stato}` },
+        async esegui(st) { const x = await attendiInvio(ctx, st, st.vars.z2); ctx.checklist.auto('2.13', { ok: true, valore: 'si', testo: `Invio XML con esito positivo (Z ${x.chiusura})` }); return `Z ${x.chiusura}: ${x.stato}` },
       },
       {
         id: 'inizio', titolo: 'Intervento tecnico: inizio', dettaglio: 'Apre l\'intervento sulla cassa (6404 fase 0).', tipo: 'scrive', conferma: 'clic', anteprima: () => ['64040'],
@@ -201,16 +201,16 @@ function defVP(ctx) {
           const c = fineCmd(imp())
           await ctx.sessione(async (s) => { const p = interpreta1104(await s.manda('1104')); st.vars.chiusureDopoFine = p?.chiusure; await s.manda(c) }, { clic: true })
           st.vars.fineMandata = true
-          ctx.checklist.auto('4.1', { ok: true, testo: 'Dati del tecnico e del laboratorio sul RT' })
-          ctx.checklist.auto('4.2', { ok: true, testo: 'Esito registrato sul RT (verifica periodica positiva)' })
+          ctx.checklist.auto('4.1', { ok: true, valore: 'si', testo: 'Dati del tecnico e del laboratorio sul RT' })
+          ctx.checklist.auto('4.2', { ok: true, valore: 'si', testo: 'Esito registrato sul RT (verifica periodica positiva)' })
           return 'intervento chiuso con esito 3'
         },
         // la prova che 64041 è stata accettata è la chiusura automatica della cassa
         verifica: (st) => ctx.sessione(async (s) => {
           const c = interpreta1104(await s.manda('1104'))
           if (st.vars.chiusureDopoFine != null && c && c.chiusure > st.vars.chiusureDopoFine) {
-            ctx.checklist.auto('4.1', { ok: true, testo: 'Dati del tecnico e del laboratorio sul RT' }); ctx.checklist.auto('4.2', { ok: true, testo: 'Esito registrato sul RT (verifica periodica positiva)' })
-            return { ok: true, testo: `la cassa ha fatto la chiusura automatica (${st.vars.chiusureDopoFine} → ${c.chiusure}): la fine intervento è stata accettata` }
+            ctx.checklist.auto('4.1', { ok: true, valore: 'si', testo: 'Dati del tecnico e del laboratorio sul RT' }); ctx.checklist.auto('4.2', { ok: true, valore: 'si', testo: 'Esito registrato sul RT (verifica periodica positiva)' })
+            return { ok: true, valore: 'si', testo: `la cassa ha fatto la chiusura automatica (${st.vars.chiusureDopoFine} → ${c.chiusure}): la fine intervento è stata accettata` }
           }
           return { ok: false, testo: `chiusure ${c?.chiusure ?? '?'}: la chiusura automatica non c'è (ancora). Se serve attendi qualche secondo e rileggi; poi guarda la carta.` }
         }),
@@ -258,7 +258,7 @@ function defVP(ctx) {
           const c = dgfeCmd(st)
           if (/<|\?/.test(c)) throw new PassoErrore('non ho data e numeri degli scontrini di prova')
           await ctx.sessione(async (s) => { await s.manda(c) }, { clic: true })
-          ctx.checklist.auto('2.14', { ok: true, testo: 'DGFE delle prove stampato' })
+          ctx.checklist.auto('2.14', { ok: true, valore: 'si', testo: 'DGFE delle prove stampato' })
           return 'DGFE stampata'
         },
       },
@@ -347,10 +347,10 @@ function defCiclo(ctx) {
     id: 'ciclo', titolo: 'Ciclo fiscale (cassa nuova)', nota: 'GUIDATO. Ordine vincolante del manuale Custom: chiave privata, censimento, fiscalizzazione (IRREVERSIBILE), accreditamento dell\'esercente, attivazione, QR. Ogni passo si conferma rileggendo la cassa.',
     passi: [
       guida('chiave', 'Chiave privata', 'Si genera UNA SOLA VOLTA (manuale, pag. 89). Non è una procedura da avviare «per vedere».', () => ['Sulla cassa: assetto PROGRAMMAZIONE → P699 → MENU TECNICO → conferma SI → esce uno scontrino con l\'esito.', 'In alternativa dal web server della cassa. Dal programma non c\'è nessun comando.'],
-        async () => { const s = await leggiFasi(ctx); return s?.chiave ? { ok: true, testo: 'chiave privata generata (1511)' } : { ok: false, testo: 'la cassa dice «chiave non generata»' } }, { tastiera: true }),
+        async () => { const s = await leggiFasi(ctx); return s?.chiave ? { ok: true, valore: 'si', testo: 'chiave privata generata (1511)' } : { ok: false, testo: 'la cassa dice «chiave non generata»' } }, { tastiera: true }),
       guida('censimento', 'Censimento', 'Solo dopo la chiave privata (pag. 90). Porta il codice fiscale del tecnico: è lui che risponde della macchina davanti all\'Agenzia.',
         () => ['Sulla cassa: P699 → MENU TECNICO → CODICE FISCALE (16 caratteri) → laboratorio.', `Dal web server: pagina Censimento (utente e password = matricola). Campi: CfTecnico = ${imp().tecnico.cf} · CfLaboratorio = ${imp().laboratorio.piva} · Captcha (lo mostra la pagina).`, 'Il programma NON invia il modulo e non manda il comando: lo fai tu. L\'Agenzia risponde dopo qualche decina di secondi: premi «Rileggi».', 'Esito positivo: due scontrini, CENSIMENTO e MIGRA SETDEVICE STATUS.'],
-        async () => { const s = await leggiFasi(ctx); return s?.censita ? { ok: true, testo: 'cassa censita (1511)' } : { ok: false, testo: 'la cassa dice «non censita» (se l\'Agenzia sta ancora rispondendo, riprova fra poco)' } }, { tastiera: true, pagina: '/Censimento.htm' }),
+        async () => { const s = await leggiFasi(ctx); return s?.censita ? { ok: true, valore: 'si', testo: 'cassa censita (1511)' } : { ok: false, testo: 'la cassa dice «non censita» (se l\'Agenzia sta ancora rispondendo, riprova fra poco)' } }, { tastiera: true, pagina: '/Censimento.htm' }),
       {
         id: 'fiscalizzazione', titolo: 'Fiscalizzazione — IRREVERSIBILE', dettaglio: 'Comando 2005, quello mandato il 22/10 sulla K3 96IKN025881 (risposta «2005», DGFE inizializzata da sola). Dopo non si torna indietro. NON si manda l\'inizializzazione della memoria di dettaglio (8007): la fa già la fiscalizzazione.',
         tipo: 'scrive', conferma: 'scritta', fiscalizzazione: true, anteprima: () => ['1008', '1511', '1012', '1001', '1002N', '8008', '2005'],
@@ -382,13 +382,13 @@ function defCiclo(ctx) {
           if (f === false) throw new PassoErrore('la cassa ha accettato 2005 ma il web server dice ancora «non fiscalizzata»: rileggi tra poco, non rimando il comando', true)
           return `fiscalizzazione accettata${f ? ' e confermata dal web server (FISCALIZZATA: SI)' : ' (il web server non è leggibile: conferma dal display)'} · DGFE: ${dopo.dgfe ?? 'non letta'} · chiusure ${dopo.c?.chiusure ?? '?'}`
         },
-        controllo: async () => { const f = await fiscalizzataDalWeb(ctx); return f === true ? { ok: true, testo: 'FISCALIZZATA: SI (web server)' } : { ok: false, testo: f === false ? 'FISCALIZZATA: NO' : 'il web server non risponde' } },
-        verifica: async () => { const f = await fiscalizzataDalWeb(ctx); return f === true ? { ok: true, testo: 'FISCALIZZATA: SI (web server)' } : { ok: false, testo: f === false ? 'FISCALIZZATA: NO — non è stata fatta' : 'web server non raggiungibile: guarda il display della cassa' } },
+        controllo: async () => { const f = await fiscalizzataDalWeb(ctx); return f === true ? { ok: true, valore: 'si', testo: 'FISCALIZZATA: SI (web server)' } : { ok: false, testo: f === false ? 'FISCALIZZATA: NO' : 'il web server non risponde' } },
+        verifica: async () => { const f = await fiscalizzataDalWeb(ctx); return f === true ? { ok: true, valore: 'si', testo: 'FISCALIZZATA: SI (web server)' } : { ok: false, testo: f === false ? 'FISCALIZZATA: NO — non è stata fatta' : 'web server non raggiungibile: guarda il display della cassa' } },
       },
       { id: 'accredito', titolo: 'Accreditamento a Fisconline — a carico dell\'ESERCENTE', dettaglio: 'Prima dell\'attivazione l\'esercente (o il suo commercialista) deve accreditarsi al portale Fisconline per ricevere l\'autorizzazione (pag. 92).', tipo: 'manuale', istruzioni: () => ['https://telematici.agenziaentrate.gov.it — lo fa l\'esercente, non il tecnico.', 'Un\'installazione ferma qui non è un problema tecnico: è il cliente che non si è ancora accreditato.', 'Spunta «L\'ho fatto» quando l\'esercente conferma.'] },
       guida('attivazione', 'Attivazione', 'Passa la cassa a registratore telematico (pag. 93). Data 000000 = adesso.',
         () => ['Sulla cassa: P699 → MENU TECNICO → attivazione. Il 22/10 è stata fatta da tastiera.', `Dati: CF tecnico ${imp().tecnico.cf} · P.IVA laboratorio ${imp().laboratorio.piva} · P.IVA/CF dell'esercente (la stessa dell'intestazione) · messa in servizio immediata (data 000000).`, 'Dal web server: pagina Attivazione (campi CfTecnico, CfLaboratorio, CfEsercente, FlagAttivazione, Captcha). Il programma NON la invia.', 'Alla prima operazione esce «MESSA IN SERVIZIO COMPLETATA». Premi «Rileggi».'],
-        async () => { const s = await leggiFasi(ctx); return s?.attivata && s?.inServizio ? { ok: true, testo: 'attivata e in servizio (1511)' } : s?.attivata ? { ok: false, testo: 'attivata ma non ancora «in servizio» (messa in servizio differita?)' } : { ok: false, testo: 'la cassa dice «non attivata»' } }, { tastiera: true, pagina: '/Attivazione.htm' }),
+        async () => { const s = await leggiFasi(ctx); return s?.attivata && s?.inServizio ? { ok: true, valore: 'si', testo: 'attivata e in servizio (1511)' } : s?.attivata ? { ok: false, testo: 'attivata ma non ancora «in servizio» (messa in servizio differita?)' } : { ok: false, testo: 'la cassa dice «non attivata»' } }, { tastiera: true, pagina: '/Attivazione.htm' }),
       { id: 'qr', titolo: 'QR code — a carico dell\'ESERCENTE', dettaglio: 'Dopo l\'attivazione l\'esercente scarica da Fisconline il QR della macchina, lo stampa e lo applica sul dispositivo (D.Lgs 175/2015, pag. 96).', tipo: 'manuale', istruzioni: () => ['Il tecnico non può scaricarlo al posto suo, ma può accorgersi che manca.', 'Spunta «L\'ho fatto» quando il QR è sulla macchina (o ricordalo al cliente).'] },
     ],
   }
@@ -512,7 +512,7 @@ export class Motore {
       const s = r.stati[r.corrente]
       let x = null
       try {
-        if (p.saltabile) { const m = await p.saltabile(); if (m) x = { ok: true, testo: m } }
+        if (p.saltabile) { const m = await p.saltabile(); if (m) x = { ok: true, valore: 'si', testo: m } }
         else if (p.tipo === 'guidato' && p.controllo) x = await p.controllo({ vars: r.vars })
       } catch { x = null }
       if (!x?.ok) break
