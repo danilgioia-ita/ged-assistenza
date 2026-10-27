@@ -217,3 +217,22 @@ test('WEB SERVER: si leggono le pagine di stato; i moduli si leggono ma non si i
     assert.ok(a.sim.webRichieste.every((q) => q.metodo === 'GET'), 'nessun POST ai moduli')
   } finally { await a.chiudi() }
 })
+
+test('CON PADRE: avviato dall\'app, esce da solo quando l\'app chiude il canale (niente server orfani)', async () => {
+  const { spawn } = await import('node:child_process')
+  const { fileURLToPath } = await import('node:url')
+  const srv = fileURLToPath(new URL('../server.mjs', import.meta.url))
+  const figlio = spawn(process.execPath, [srv, '--no-apri', '--con-padre'], { stdio: ['pipe', 'pipe', 'ignore'], env: { ...process.env, HOME: process.env.TMPDIR || '/tmp' } })
+  let out = ''
+  const indirizzo = await new Promise((ok, no) => {
+    const t = setTimeout(() => { figlio.kill(); no(new Error('nessun indirizzo stampato')) }, 8000)
+    figlio.stdout.on('data', (d) => { out += d; const m = out.match(/http:\/\/127\.0\.0\.1:\d+\/\S+/); if (m) { clearTimeout(t); ok(m[0]) } })
+  })
+  assert.match(indirizzo, /^http:\/\/127\.0\.0\.1:\d+\/[A-Za-z0-9_-]{16,}\/$/)
+  const uscito = new Promise((ok) => figlio.on('exit', (c, s) => ok({ c, s })))
+  figlio.stdin.end()
+  const r = await Promise.race([uscito, new Promise((ok) => setTimeout(() => ok('ancora vivo'), 5000))])
+  if (r === 'ancora vivo') figlio.kill()
+  assert.notEqual(r, 'ancora vivo')
+  assert.equal(r.c, 0)
+})

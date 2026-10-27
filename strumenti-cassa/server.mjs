@@ -4,6 +4,7 @@
 //
 //   node strumenti-cassa/server.mjs            apre il browser su http://127.0.0.1:<porta libera>/<token>/
 //   node strumenti-cassa/server.mjs --no-apri  non apre il browser (stampa solo l'indirizzo)
+//   --con-padre                                 esce da solo quando si chiude stdin (lo usa l'app Tecnico)
 //   node strumenti-cassa/server.mjs --simulatore  parte con una cassa FINTA (per provare l'interfaccia, mai sulla cassa vera)
 //
 // SICUREZZA: ascolta SOLO su 127.0.0.1; il token casuale è nell'indirizzo; si controllano Host e intestazione di richiesta,
@@ -267,4 +268,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   console.log(`\nStrumenti cassa — GED Assistance Tecnico\n${app.indirizzo}\n\nL'indirizzo contiene un codice segreto: vale solo finché il programma è acceso. Chiudi con Ctrl+C.\nRegistro dei comandi: ${app.registro.cartella}\n`)
   const esci = () => { app.chiudi().then(() => sim?.chiudi()).then(() => process.exit(0)) }
   process.on('SIGINT', esci); process.on('SIGTERM', esci)
+  // Avviato dall'app Tecnico: se l'app si chiude (o muore) il canale su stdin si chiude e il programma va via con lei,
+  // senza lasciare server orfani con il loro codice segreto.
+  if (args.includes('--con-padre')) { process.stdin.on('end', esci); process.stdin.on('close', esci); process.stdin.resume() }
 }

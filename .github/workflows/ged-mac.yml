@@ -250,6 +250,19 @@ jobs:
           # configurazione e preferenze vanno per ORG + APP_NAME, non per bundle id.
           /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier it.gedservice.assistenza.tecnico" "$R/RustDesk.app/Contents/Info.plist"
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$R/RustDesk.app/Contents/Info.plist")" = "it.gedservice.assistenza.tecnico"
+          # Strumenti cassa (Danilo, 27/10, «stesso rilascio»): il programma locale (Node puro, senza dipendenze) entra nelle
+          # Resources dell'app, SOLO nel tecnico e PRIMA di firmare (la firma sigilla anche le Resources). Senza test: non
+          # servono a chi usa l'app. L'app lo avvia con il node del Mac (desktop/widgets/ged_strumenti_cassa.dart).
+          mkdir -p "$R/RustDesk.app/Contents/Resources/strumenti-cassa"
+          cp -R strumenti-cassa/server.mjs strumenti-cassa/lib strumenti-cassa/public strumenti-cassa/dati "$R/RustDesk.app/Contents/Resources/strumenti-cassa/"
+          test -f "$R/RustDesk.app/Contents/Resources/strumenti-cassa/server.mjs"
+          test -f "$R/RustDesk.app/Contents/Resources/strumenti-cassa/lib/listabianca.mjs"
+          test -f "$R/RustDesk.app/Contents/Resources/strumenti-cassa/public/index.html"
+          test -f "$R/RustDesk.app/Contents/Resources/strumenti-cassa/dati/profili.json"
+          # Le casse stanno nella rete locale: da Sequoia il Mac chiede il permesso alle app e, senza questa frase nel
+          # pacchetto, lo nega in silenzio (le connessioni alla cassa falliscono come «irraggiungibile»). Il processo
+          # Node figlio risponde all'app che lo ha avviato.
+          /usr/libexec/PlistBuddy -c "Add :NSLocalNetworkUsageDescription string GED Assistance Tecnico deve raggiungere le casse fiscali nella rete del cliente (Strumenti cassa)." "$R/RustDesk.app/Contents/Info.plist"
           mv "$R/RustDesk.app" "$R/GED Assistance Tecnico.app"
           echo "GED_APP=GED Assistance Tecnico.app" >> "$GITHUB_ENV"
           echo "GED_VOLNAME=GED Assistance Tecnico" >> "$GITHUB_ENV"
