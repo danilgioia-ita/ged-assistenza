@@ -18,11 +18,12 @@ import { Cassa, ErroreCassa, CassaErrore, indirizzoPrivato } from './lib/cassa.m
 import { creaRegistro, cartellaDati, oraItaliana } from './lib/registro.mjs'
 import { creaArchivio, cfValido, pivaValida } from './lib/archivio.mjs'
 import { creaWeb, leggiIndice, leggiCampi, TASTI, WebErrore } from './lib/web.mjs'
-import { leggiCassa, leggiWeb, valuta } from './lib/stato.mjs'
+import { leggiCassa, leggiWeb, valuta, conRiprova, interpreta1002, interpreta1104 } from './lib/stato.mjs'
 import { impostaIntestazione, impostaAliquote, impostaOra, preparaRighe, STILI, ProgrammaErrore } from './lib/programma.mjs'
+import { leggiStatus } from './lib/web.mjs'
 import { Motore, PassoErrore, descriviErrore } from './lib/procedure.mjs'
 import { cercaInRete } from './lib/rete.mjs'
-import { RIGHE, CAMPI, righeComposte, datiComposti, testoRiepilogo, paginaStampabile } from './lib/checklist.mjs'
+import { RIGHE, CAMPI, righeComposte, datiComposti, testoRiepilogo, paginaStampabile, baseDaCassa } from './lib/checklist.mjs'
 
 const QUI = dirname(fileURLToPath(import.meta.url))
 const leggiJson = (f) => JSON.parse(readFileSync(join(QUI, 'dati', f), 'utf8'))
@@ -46,7 +47,7 @@ export async function avvia(opz = {}) {
   const ctxMotore = () => ({
     sessione: (lavoro, conferma = {}) => sess.cassa.sessione(lavoro, { conferma }),
     web: () => sess.web,
-    webIndice: async () => { try { return leggiIndice(await sess.web.leggi('/index.htm')) } catch { return null } },
+    webIndice: async () => { try { return leggiIndice(await conRiprova(() => sess.web.leggi('/index.htm'), { attendi })) } catch { return null } },
     impostazioni: () => archivio.impostazioni(),
     matricola: () => sess.matricola,
     firmwareUltimo: () => profiloDi().firmwareUltimo || ultimiFirmware.modelli[sess.modello] || null,
@@ -103,13 +104,14 @@ export async function avvia(opz = {}) {
       sess.web = creaWeb({ ip, matricola: letto.matricola, porta: sess.portaWeb, registro, attesaTastoMs })
       sess.modello = (/(K3[A-Z0-9-]*)/.exec(letto.p1013) || [])[1] || null
       sess.firmware = (/(\d{1,2}\.\d{2}\.\d{2})/.exec(letto.p1013) || [])[1] || null
+      sess.baseLetta = null
       sess.motore = new Motore(ctxMotore())
       { const c = archivio.cassa(sess.matricola); c.ip = ip; archivio.salvaCassa(sess.matricola, c) }
       const imp = archivio.impostazioni(); imp.ultimaIp = ip; archivio.salvaImpostazioni(imp)
       registro.evento(sess.matricola, `collegata ${ip} (${sess.modello || '?'} ${sess.firmware || '?'})`)
       return azioni['GET stato-app']()
     },
-    async 'POST scollega'() { libera(); Object.assign(sess, { cassa: null, web: null, ip: '', matricola: '', modello: null, firmware: null, motore: null, ultimoStato: null }); return azioni['GET stato-app']() },
+    async 'POST scollega'() { libera(); Object.assign(sess, { cassa: null, web: null, ip: '', matricola: '', modello: null, firmware: null, motore: null, ultimoStato: null, baseLetta: null }); return azioni['GET stato-app']() },
     async 'POST profilo'(b) {
       cassaCollegata()
       if (!profili[b?.profilo]) throw new CassaErrore('profilo sconosciuto', 'dati')
@@ -127,7 +129,9 @@ export async function avvia(opz = {}) {
     },
     async 'GET cassa'() {
       const cassa = cassaCollegata()
-      const [letture, web] = await Promise.all([cassa.sessione((s) => leggiCassa(s)), leggiWeb(sess.web)])
+      // uno dopo l'altro: il web server della cassa è lento se nello stesso momento parla anche il protocollo
+      const letture = await cassa.sessione((s) => leggiCassa(s))
+      const web = await leggiWeb(sess.web, { attendi })
       const a = archivio.cassa(sess.matricola)
       const v = valuta({ letture, web, profilo: profiloDi(), spunte: a.spunte, intestazioneVoluta: a.intestazioneVoluta, ultimiFirmware, adesso: adesso(), vp: a.vp || null })
       sess.ultimoStato = v
@@ -179,12 +183,24 @@ export async function avvia(opz = {}) {
     async 'GET checklist'() {
       cassaCollegata()
       const a = archivio.cassa(sess.matricola)
-      return { campi: CAMPI, righe: righeComposte(a.checklist), dati: datiComposti(a.checklist, baseChecklist()) }
+      const { base, avvisi } = await baseChecklist()
+      return { campi: CAMPI, righe: righeComposte(a.checklist), dati: datiComposti(a.checklist, base), base, avvisi }
     },
     async 'POST checklist'(b) {
       cassaCollegata()
       const a = archivio.cassa(sess.matricola)
-      if (b?.dati) a.checklist.dati = { ...a.checklist.dati, ...Object.fromEntries(CAMPI.map(([k]) => k).filter((k) => k in b.dati).map((k) => [k, String(b.dati[k]).slice(0, k === 'nota' ? 50 : 120)])) }
+      const { base } = await baseChecklist(false)
+      if (b?.dati) {
+        const dati = { ...a.checklist.dati }
+        for (const [k] of CAMPI) {
+          if (!(k in b.dati)) continue
+          const v = String(b.dati[k]).slice(0, k === 'nota' ? 50 : 120)
+          // uguale a quello dedotto dalla cassa: si lascia «seguire» la cassa; diverso (anche vuoto): è una correzione del tecnico e non si tocca più
+          if (v === (base[k] ?? '') && !(k in dati)) continue
+          if (v === (base[k] ?? '')) delete dati[k]; else dati[k] = v
+        }
+        a.checklist.dati = dati
+      }
       if (b?.spunte) a.checklist.spunte = { ...a.checklist.spunte, ...Object.fromEntries(RIGHE.map(([r]) => r).filter((r) => r in b.spunte).map((r) => [r, !!b.spunte[r]])) }
       archivio.salvaCassa(sess.matricola, a)
       return azioni['GET checklist']()
@@ -192,11 +208,24 @@ export async function avvia(opz = {}) {
     async 'GET registro'(_, q) { cassaCollegata(); return { righe: registro.coda(sess.matricola, Math.min(Number(q.get('righe')) || 200, 1000)), file: registro.file(sess.matricola) } },
   }
 
-  const baseChecklist = () => {
-    const i = archivio.impostazioni(); const v = sess.ultimoStato
-    return { matricola: sess.matricola, pivaEsercente: v?.esercente?.piva || '', azzeramenti: v?.chiusure != null ? String(v.chiusure) : '', tecnicoCF: i.tecnico.cf, labPIVA: i.laboratorio.piva }
+  // I dati del modulo di partenza, dedotti da ciò che la cassa dice (intestazione, 1104, web server). Con un passo in corso
+  // si usa l'ultima lettura: non si mette in coda una lettura dietro a una procedura.
+  async function baseChecklist(fresco = true) {
+    if (fresco && sess.cassa && !sess.motore?.run?.inEsecuzione) {
+      try {
+        const l = await sess.cassa.sessione(async (s) => {
+          const righe = []
+          for (let i = 1; i <= 9; i++) righe.push(interpreta1002(await s.manda('1002' + i))?.testo || '')
+          return { righe, chiusure: interpreta1104(await s.manda('1104'))?.chiusure ?? null }
+        })
+        let webPiva = ''
+        try { webPiva = leggiStatus(await conRiprova(() => sess.web.leggi('/Status.htm'), { attendi, tentativi: 2 }))['CF/PIVA ESERCENTE'] || '' } catch {}
+        sess.baseLetta = { ...l, webPiva }
+      } catch { /* la cassa non risponde: valgono i valori dell'ultima lettura */ }
+    }
+    return baseDaCassa({ matricola: sess.matricola, ...(sess.baseLetta || {}), impostazioni: archivio.impostazioni() })
   }
-  const contestoCl = () => { const a = archivio.cassa(sess.matricola); return { ip: sess.ip, modello: sess.modello, firmware: sess.firmware, profilo: profiloDi().nome, stato: a.checklist, base: baseChecklist() } }
+  const contestoCl = async () => { const a = archivio.cassa(sess.matricola); return { ip: sess.ip, modello: sess.modello, firmware: sess.firmware, profilo: profiloDi().nome, stato: a.checklist, base: (await baseChecklist(false)).base } }
 
   // ───────────────────────── il server ─────────────────────────
   const tokenBuf = Buffer.from(token)
@@ -219,8 +248,8 @@ export async function avvia(opz = {}) {
         const origin = req.headers.origin
         if (origin && origin !== `http://127.0.0.1:${p}` && origin !== `http://localhost:${p}`) return nega(403, 'origine non ammessa')
         const nome = rest.slice(5)
-        if (req.method === 'GET' && nome === 'checklist/stampa') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(paginaStampabile(contestoCl())) }
-        if (req.method === 'GET' && nome === 'checklist/testo') { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(testoRiepilogo(contestoCl())) }
+        if (req.method === 'GET' && nome === 'checklist/stampa') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(paginaStampabile(await contestoCl())) }
+        if (req.method === 'GET' && nome === 'checklist/testo') { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(testoRiepilogo(await contestoCl())) }
         const f = azioni[`${req.method} ${nome}`]
         if (!f) return nega(404, 'azione sconosciuta')
         let corpo = null

@@ -79,3 +79,37 @@ ${righe.map((r) => `<tr><td>${esc(r.riga)}</td><td>${esc(r.testo)}</td><td class
 <div class="nota">${esc(PROSSIMO_PASSO)}</div>
 </body></html>`
 }
+
+// ───────────── i dati del modulo, DEDOTTI da ciò che la cassa dice ─────────────
+const VIA = /^(VIA|V\.LE|VLE|VIALE|PIAZZA|P\.ZZA|P\.ZA|P\.ZZ|CORSO|C\.SO|LARGO|VICO|VICOLO|STRADA|S\.S\.|SS\s?\d|LOC\.|LOCALITA|TRAV\.?|CALATA|RIVIERA|CONTRADA|C\.DA|PIAZZALE|P\.LE|LUNGOMARE|VIA\w)/i
+const FABBRICA = /CUSTOM\s*SPA|FONTEVIVO|NEWTON|^K3F-?N$/i
+const TELEFONO = /^(TEL|TELEFONO|CELL|FAX)\b/i
+
+/** Dalle righe d'intestazione: esercente (righe che non sono indirizzo, CAP/città o P.IVA), indirizzo, P.IVA. */
+export function deduciDaIntestazione(righe) {
+  const piene = righe.map((r) => String(r ?? '').trim()).filter(Boolean)
+  if (piene.some((r) => FABBRICA.test(r))) return { esercente: '', indirizzo: '', piva: '', fabbrica: true }
+  const esercente = [], indirizzo = []
+  let piva = ''
+  for (const r of piene) {
+    const p = /(?<!\d)(\d{11})(?!\d)/.exec(r)
+    if (p) { piva ||= p[1]; continue }
+    if (TELEFONO.test(r)) continue
+    if (VIA.test(r) || /(?<!\d)\d{5}(?!\d)/.test(r)) { indirizzo.push(r); continue }
+    esercente.push(r)
+  }
+  return { esercente: esercente.join(' / '), indirizzo: indirizzo.join(', '), piva, fabbrica: false }
+}
+
+/** I valori di partenza del modulo. Il tecnico può correggerli: una sua modifica non si sovrascrive (vedi `datiComposti`). */
+export function baseDaCassa({ matricola, righe = [], webPiva = '', chiusure = null, impostazioni }) {
+  const d = deduciDaIntestazione(righe)
+  const wp = String(webPiva || '').trim()
+  return {
+    base: {
+      matricola: matricola || '', esercente: d.esercente, pivaEsercente: /^[A-Za-z0-9]{11,16}$/.test(wp) ? wp : d.piva, indirizzo: d.indirizzo,
+      azzeramenti: chiusure != null ? String(chiusure) : '', tecnicoCF: impostazioni.tecnico.cf, labPIVA: impostazioni.laboratorio.piva,
+    },
+    avvisi: d.fabbrica ? ['Intestazione di fabbrica: esercente, indirizzo e P.IVA non si possono dedurre. Imposta prima l\'intestazione (sezione Programmazione) o compilali a mano.'] : [],
+  }
+}

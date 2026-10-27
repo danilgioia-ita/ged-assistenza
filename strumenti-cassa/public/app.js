@@ -36,6 +36,8 @@ function avviso(testo, tipo = 'info', dettaglio) {
     h('div', null, testo, dettaglio?.manuale && dettaglio.manuale !== dettaglio.spiegazione ? h('div', { class: 'piccolo' }, 'Manuale: ' + dettaglio.manuale) : null),
     h('button', { onclick: () => m.remove() }, 'chiudi'))
   box.prepend(m)
+  m.dataset.tipo = tipo
+  avviso.ultimo = m
   while (box.children.length > 3) box.lastChild.remove()
   if (tipo === 'bene') setTimeout(() => m.remove(), 12000)
 }
@@ -153,7 +155,7 @@ function disegnaProfilo() {
   const ordine = [['diretto', 'Diretto nostro'], ['flatpay', 'Flatpay'], ['mooney', 'Mooney']]
   riempi('s-profilo',
     h('h2', null, '1 · Di chi è la cassa'),
-    h('div', { class: 'riga', role: 'radiogroup', 'aria-label': 'Di chi è la cassa' }, ordine.map(([k, n]) => h('button', { class: 'scelta' + (S.app.profilo === k ? ' on' : ''), role: 'radio', 'aria-checked': String(S.app.profilo === k), onclick: () => agisci(async () => { await api('POST', 'profilo', { profilo: k }); await rileggi() }) }, n))),
+    h('div', { class: 'riga', role: 'radiogroup', 'aria-label': 'Di chi è la cassa' }, ordine.map(([k, n]) => h('button', { class: 'scelta' + (S.app.profilo === k ? ' on' : ''), role: 'radio', 'aria-checked': String(S.app.profilo === k), onclick: () => agisci(async () => { await api('POST', 'profilo', { profilo: k }); await rileggi(); await caricaCasse() }) }, n))),
     h('div', { class: 'griglia larga' },
       h('div', { class: 'riquadro' }, h('span', { class: 'piccolo' }, 'Dove si registra'), h('b', null, p.registra), h('span', { class: 'piccolo' }, p.nota)),
       h('div', { class: 'riquadro' }, h('span', { class: 'piccolo' }, `Profilo «${p.nome}» applicato`), h('div', { class: 'riga', style: 'gap:6px' }, p.etichette.map((t) => h('span', { class: 'chip' }, t))))))
@@ -347,7 +349,8 @@ function passo(p, s, i) {
           h('div', { class: 'campo' }, h('label', { for: 'fm' }, 'Matricola'), h('input', { id: 'fm', type: 'text', autocomplete: 'off', value: inp.matricola || '', placeholder: S.app.matricola, oninput: (e) => { inp.matricola = e.target.value.trim() } })),
           h('div', { class: 'campo' }, h('label', { for: 'fp' }, 'Scrivi: IRREVERSIBILE'), h('input', { id: 'fp', type: 'text', autocomplete: 'off', value: inp.scritta || '', oninput: (e) => { inp.scritta = e.target.value.trim() } })))))
       else if (s.conferma === 'scritta') corpo.push(h('div', { class: 'conferma' }, h('div', null, `Per confermare scrivi la parola ${s.parola}.`), h('div', { class: 'campo', style: 'max-width:240px' }, h('input', { type: 'text', 'aria-label': 'Conferma scritta', autocomplete: 'off', value: inp.scritta || '', placeholder: s.parola, oninput: (e) => { inp.scritta = e.target.value.trim() } }))))
-      if (s.conCampi) corpo.push(h('div', { class: 'riga' }, h('div', { class: 'campo', style: 'width:110px' }, h('label', null, 'Mese prossima'), h('input', { type: 'text', value: inp.mm || '', placeholder: 'MM', oninput: (e) => { inp.mm = e.target.value.trim() } })), h('div', { class: 'campo', style: 'width:110px' }, h('label', null, 'Anno (2 cifre)'), h('input', { type: 'text', value: inp.aa || '', placeholder: 'AA', oninput: (e) => { inp.aa = e.target.value.trim() } })), h('span', { class: 'piccolo' }, 'Vuoti = fra 24 mesi.')))
+      if (s.conCampi) { if (inp.mm === undefined) inp.mm = s.predefiniti?.mm || ''; if (inp.aa === undefined) inp.aa = s.predefiniti?.aa || '' }
+      if (s.conCampi) corpo.push(h('div', { class: 'riga' }, h('div', { class: 'campo', style: 'width:110px' }, h('label', null, 'Mese (MM)'), h('input', { type: 'text', value: inp.mm || '', placeholder: 'MM', oninput: (e) => { inp.mm = e.target.value.trim() } })), h('div', { class: 'campo', style: 'width:110px' }, h('label', null, 'Anno (2 cifre)'), h('input', { type: 'text', value: inp.aa || '', placeholder: 'AA', oninput: (e) => { inp.aa = e.target.value.trim() } })), h('span', { class: 'piccolo' }, 'Proposto: oggi + 24 mesi. Non si può lasciare vuoto.')))
       az.push(eseguiBtn(s.stato === 'errore' ? 'Conferma e rimanda questo passo' : 'Conferma e manda', {}))
     } else if (s.tipo === 'guidato') {
       az.push(h('button', { class: 'primario', onclick: () => rilettura(s, i) }, 'Rileggi la cassa'))
@@ -367,6 +370,7 @@ function passo(p, s, i) {
 }
 
 async function lancia(s, inp) {
+  document.querySelectorAll('#avviso [data-fermo]').forEach((x) => x.remove())
   const input = { conferma: true, ...inp }
   const i = S.proc.passi.findIndex((x) => x.id === s.id)
   if (S.occupato) return
@@ -384,7 +388,8 @@ async function segui() {
     disegnaProcedure()
   }
   const f = S.proc?.passi?.[Math.max(0, (S.proc?.corrente ?? 1) - 1)]
-  if (S.proc?.passi?.some((x) => x.stato === 'errore')) avviso('Il passo si è fermato: guarda l\'errore sotto il passo.', 'male')
+  document.querySelectorAll('#avviso [data-fermo]').forEach((x) => x.remove())
+  if (S.proc?.passi?.some((x) => x.stato === 'errore')) { avviso('Il passo si è fermato: guarda l\'errore sotto il passo.', 'male'); avviso.ultimo.dataset.fermo = '1' }
   else if (f) avviso(`Passo riuscito: ${f.titolo}`, 'bene')
   caricaCheck(); caricaRegistro()
 }
@@ -403,9 +408,10 @@ async function rilettura(s, i) {
 function disegnaCheck() {
   const c = S.check
   if (!c || !S.app?.collegata) return riempi('s-checklist')
-  const salva = () => agisci(async () => { S.check = await api('POST', 'checklist', { dati: c.dati, spunte: Object.fromEntries(c.righe.map((r) => [r.riga, r.si])) }); disegnaCheck() }, 'Check-list salvata')
+  const salva = () => agisci(async () => { S.check = await api('POST', 'checklist', { dati: c.dati, spunte: Object.fromEntries(c.righe.map((r) => [r.riga, r.si])) }); disegnaCheck(); await caricaCasse() }, 'Check-list salvata')
   riempi('s-checklist',
     h('div', { class: 'riga fra' }, h('h2', null, '5 · Check-list Mod. 10.1 + 10.2'), h('span', { class: 'tenue' }, 'Blu = l\'ha verificato la procedura · grigio = lo spunti tu')),
+    ...(c.avvisi || []).map((x) => h('div', { class: 'msg info' }, x)),
     h('div', { class: 'griglia' }, c.campi.map(([k, et]) => h('div', { class: 'campo' }, h('label', { for: 'cl-' + k }, et), h('input', { id: 'cl-' + k, type: 'text', value: c.dati[k] || '', maxlength: k === 'nota' ? 50 : 120, oninput: (e) => { c.dati[k] = e.target.value } })))),
     h('div', { class: 'griglia larga' }, c.righe.map((r) => h('label', { class: 'check' + (r.verificata ? ' auto' : '') },
       h('input', { type: 'checkbox', checked: r.si, disabled: r.verificata && r.si, onchange: (e) => { r.si = e.target.checked } }),
@@ -437,7 +443,7 @@ function disegnaImpostazioni() {
       h('div', { class: 'campo' }, h('label', { for: 'imp-n' }, 'Tecnico'), h('input', { id: 'imp-n', type: 'text', value: v.nome, oninput: (e) => { v.nome = e.target.value } })),
       h('div', { class: 'campo' }, h('label', { for: 'imp-cf' }, 'Codice fiscale del tecnico (16 caratteri)'), h('input', { id: 'imp-cf', type: 'text', maxlength: 16, value: v.cf, oninput: (e) => { v.cf = e.target.value.toUpperCase() } })),
       h('div', { class: 'campo' }, h('label', { for: 'imp-p' }, 'P.IVA del laboratorio (11 cifre)'), h('input', { id: 'imp-p', type: 'text', maxlength: 11, value: v.piva, oninput: (e) => { v.piva = e.target.value } }))),
-    h('div', { class: 'riga' }, h('button', { onclick: () => agisci(async () => { S.app = await api('POST', 'impostazioni', { tecnico: { cf: v.cf, nome: v.nome }, laboratorio: { piva: v.piva } }); disegnaTutto() }, 'Impostazioni salvate') }, 'Salva'), h('span', { class: 'piccolo' }, 'Si usano nell\'intervento tecnico della verificazione e nei dati del modulo.')))
+    h('div', { class: 'riga' }, h('button', { onclick: () => agisci(async () => { S.app = await api('POST', 'impostazioni', { tecnico: { cf: v.cf, nome: v.nome }, laboratorio: { piva: v.piva } }); disegnaTutto(); await caricaCasse() }, 'Impostazioni salvate') }, 'Salva'), h('span', { class: 'piccolo' }, 'Si usano nell\'intervento tecnico della verificazione e nei dati del modulo.')))
 }
 
 function disegnaPiede() {

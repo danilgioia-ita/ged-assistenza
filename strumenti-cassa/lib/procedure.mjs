@@ -236,8 +236,10 @@ function defVP(ctx) {
         id: 'memorie', titolo: 'Test delle memorie', dettaglio: 'La cassa stampa «avvio procedura verif. periodica». Mese e anno della PROSSIMA verifica (di norma fra 24 mesi). Può durare fino a 45 secondi.', tipo: 'scrive', conferma: 'clic', conCampi: ['mm', 'aa'],
         anteprima: (st) => [`2006${mmaa(st).mm}${mmaa(st).aa}`],
         async esegui(st, input) {
-          const mm = String(input.mm ?? mmaa(st).mm).padStart(2, '0'); const aa = String(input.aa ?? mmaa(st).aa).padStart(2, '0')
-          if (!/^(0[1-9]|1[0-2])$/.test(mm) || !/^\d\d$/.test(aa)) throw new PassoErrore('mese e anno della prossima verifica non validi')
+          const prop = mmaa(st)
+          if (!String(input.mm ?? '').trim() || !String(input.aa ?? '').trim()) throw new PassoErrore(`scrivi mese e anno della prossima verifica (proposto ${prop.mm}/${prop.aa}, cioè fra 24 mesi): non li lascio vuoti senza che tu lo sappia`)
+          const mm = String(input.mm).trim().padStart(2, '0'); const aa = String(input.aa).trim().slice(-2).padStart(2, '0')
+          if (!/^(0[1-9]|1[0-2])$/.test(mm) || !/^\d\d$/.test(aa)) throw new PassoErrore(`mese e anno della prossima verifica non validi («${input.mm}/${input.aa}»): scrivi MM e AA, per esempio ${prop.mm}/${prop.aa}`)
           st.vars.prossima = { mm, aa }
           for (let t = 1; t <= 4; t++) {
             try { await ctx.sessione(async (s) => { await s.manda('2006' + mm + aa) }, { clic: true }); return `test delle memorie fatto, prossima verifica ${mm}/20${aa}` } catch (e) {
@@ -267,10 +269,15 @@ function defVP(ctx) {
           const w = await ctx.webIndice()
           if (r.a !== 0) throw new PassoErrore(`sulla cassa c'è un documento aperto (1012 = ${r.a})`)
           if (w && (w.nonInviati || w.falliti)) throw new PassoErrore(`corrispettivi non a posto: ${w.nonInviati} non inviati, ${w.falliti} falliti`)
-          ctx.checklist.dati({ azzeramenti: String(r.c?.chiusure ?? '') })
+          let via1515 = null
+          if (!w) {
+            // il web server non risponde: la ricevuta 1515 dell'ultima chiusura dice se è stata inviata
+            const x = await attendiInvio(ctx, st, r.c.chiusure, { tentativi: 4 })
+            via1515 = `chiusura ${x.chiusura}: ${x.stato} (dalla ricevuta 1515, il web server non risponde)`
+          }
           const m = mmaa(st); const o = oraRoma(ctx.adesso())
           ctx.salvaVP({ data: dataIt(o), prossima: `${m.mm}/20${m.aa}` })
-          return `${r.c?.chiusure} chiusure · nessun documento aperto${w ? ` · corrispettivi: ${w.nonInviati} non inviati, ${w.falliti} falliti` : ' · corrispettivi non leggibili dal web server'}`
+          return `${r.c?.chiusure} chiusure · nessun documento aperto${w ? ` · corrispettivi: ${w.nonInviati} non inviati, ${w.falliti} falliti` : ' · ' + via1515}`
         },
       },
       {
@@ -413,7 +420,7 @@ export class Motore {
       id: r.id, titolo: r.def.titolo, nota: r.def.nota, corrente: r.corrente, inEsecuzione: r.inEsecuzione, finita: r.corrente >= r.def.passi.length,
       passi: r.def.passi.map((p, i) => ({
         n: i + 1, id: p.id, titolo: p.titolo, dettaglio: p.dettaglio, tipo: p.tipo, conferma: p.conferma || null, parola: p.parola || null, fiscalizzazione: !!p.fiscalizzazione,
-        conCampi: p.conCampi || null, senzaRilettura: !!p.senzaRilettura, tastiera: !!p.tastiera, pagina: p.pagina || null,
+        conCampi: p.conCampi || null, predefiniti: p.conCampi ? (() => { const m = prossimaVerifica(this.ctx.adesso()); return { mm: r.vars.prossima?.mm ?? m.mm, aa: r.vars.prossima?.aa ?? m.aa } })() : null, senzaRilettura: !!p.senzaRilettura, tastiera: !!p.tastiera, pagina: p.pagina || null,
         anteprima: p.anteprima ? safe(() => p.anteprima({ vars: r.vars })) : [], istruzioni: p.istruzioni ? safe(() => p.istruzioni({ vars: r.vars })) : [],
         puoVerificare: !!p.verifica, ...r.stati[i],
       })),

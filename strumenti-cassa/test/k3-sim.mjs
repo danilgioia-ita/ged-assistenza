@@ -256,6 +256,7 @@ export function avviaSimulatore(o = {}) {
   const web = http.createServer((req, res) => {
     const auth = 'Basic ' + Buffer.from(`${opz.matricola}:${opz.matricola}`).toString('base64')
     webRichieste.push({ metodo: req.method, url: req.url })
+    if (opz.webDown) return req.destroy()
     if (req.headers.authorization !== auth) { res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Custom K3"' }); return res.end('no') }
     const parti = []
     req.on('data', (d) => parti.push(d))
