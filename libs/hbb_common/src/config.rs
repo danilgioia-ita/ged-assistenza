@@ -2782,10 +2782,12 @@ fn ged_variante() -> HashMap<String, String> {
     let mut m = HashMap::new();
     let tipo = if option_env!("GED_VARIANTE") == Some("tecnico") { "outgoing" } else { "incoming" };
     m.insert("conn-type".to_owned(), tipo.to_owned());
-    if tipo == "incoming" {
-        // Versione cliente (decisione di Danilo, 26/10): niente scheda Account (accesso a un account RustDesk).
-        m.insert("disable-account".to_owned(), "Y".to_owned());
-    }
+    // Niente account RustDesk, in tutte e due le versioni. Cliente: decisione di Danilo, 26/10. Tecnico: Danilo, 3/11 —
+    // «se vado su rubrica vuole accesso login tipo gmail». Rubrica e «Dispositivi accessibili» esistono solo sul server
+    // a pagamento (RustDesk Pro, accesso Google/OIDC); il nostro server non li ha, quindi la scheda chiedeva un accesso
+    // che non poteva mai riuscire. Restano Recenti, Preferiti (col nome che si da' al cliente) e Rete locale.
+    m.insert("disable-account".to_owned(), "Y".to_owned());
+    m.insert("disable-ab".to_owned(), "Y".to_owned());
     m
 }
 
