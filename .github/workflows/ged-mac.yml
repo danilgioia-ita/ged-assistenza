@@ -14,11 +14,14 @@ on:
   workflow_dispatch:
     inputs:
       variante:
-        description: 'cliente (si fa assistere) oppure tecnico (si collega)'
+        # Dal 4/11/2026 qui si costruisce SOLO la versione cliente. Il Tecnico per Mac porta con sé gli Strumenti
+        # cassa, che stanno in un repository PRIVATO: si costruisce lì, perché registri e artefatti di un repository
+        # pubblico li vede chiunque (decisione di Danilo del 3/11, dopo i dati veri finiti in questo repository).
+        description: 'cliente (si fa assistere); il Tecnico per Mac si costruisce nel repository privato'
         required: true
-        default: 'tecnico'
+        default: 'cliente'
         type: choice
-        options: [cliente, tecnico]
+        options: [cliente]
 
 env:
   GED_VARIANTE: "${{ inputs.variante }}"

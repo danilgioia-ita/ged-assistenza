@@ -1,0 +1,32 @@
+name: Guardia dei dati veri
+
+# Dal 4/11/2026, a ogni push e pull request: nessun commit GED (dalla base RustDesk 1.5.0 in poi) può contenere
+# codici fiscali, P.IVA, matricole, PEC, cellulari, IBAN o immagini non dichiarate. È il secondo controllo dopo il
+# pre-push: se qualcuno spinge senza la guardia locale, qui diventa rosso subito. Nei registri i valori escono
+# mascherati, perché questo repository è pubblico. Decisione di Danilo del 3/11: i dati non possono uscire.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  guardia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Le prove della guardia
+        run: node --test tools/guardia-dati-veri/guardia.test.mjs
+      - name: Tutti i commit GED dalla base RustDesk 1.5.0
+        run: |
+          git fetch --no-tags https://github.com/rustdesk/rustdesk.git refs/tags/1.5.0:refs/tags/1.5.0 || true
+          node tools/guardia-dati-veri/guardia.mjs --range "1.5.0..HEAD"

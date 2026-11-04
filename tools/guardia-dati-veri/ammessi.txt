@@ -1,0 +1,45 @@
+# AMMESSI DALLA GUARDIA DEI DATI VERI
+# Qui si dichiara ciò che SEMBRA un dato ma non lo è: valori inventati, domini d'esempio, immagini nostre pubbliche.
+# Ogni riga dice perché. Mai un dato vero di una persona o di un cliente: se serve per una prova, si inventa.
+#
+#   valore <testo>      un valore finto (P.IVA, CF, matricola, telefono) che la guardia scambierebbe per vero
+#   dominio <dominio>   email in questo dominio (e nei suoi sottodomini) ammesse
+#   binario <sha256>    un'immagine o un PDF nuovi, controllati a mano: impronta del contenuto
+
+# domini riservati agli esempi (RFC 2606) e il nostro esempio italiano
+dominio example.com
+dominio example.org
+dominio example.net
+dominio esempio.it
+# autore della libreria hbb_common di RustDesk (Cargo.toml), pubblico
+dominio opentradesolutions.com
+dominio rustdesk.com
+
+# icone e logo di GED Assistance (24-25/10/2026): marchio nostro, pubblico
+binario 04759b8abad12b6738883c14c0f931e936b62ba4c632d150b54e6f149273413d # flutter/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png
+binario 0763fcd4271033b2e20ccd4cfd62a35147c95be2d894040968c3acd1a447f91c # flutter/android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png
+binario 0a254582a231d43e43e64f5f08b676404413782577f9d19bb00da366cfce7c32 # flutter/assets/icon.png
+binario 1025cdebd963307a77ea80c83dbd5369ef5061681330f093cf3ad77a7462315a # res/icon.png
+binario 17472c5cbc5ae882f158e3f72d4bac913b61f33f4dbfd493d4fb7d0b71ca341d # flutter/android/app/src/main/res/mipmap-xhdpi/ic_stat_logo.png
+binario 1846da945f8ed6153d22418ca2e41ae661225b4f6e20ea9fbca5a54d97b57c01 # flutter/android/app/src/main/res/mipmap-xxhdpi/ic_stat_logo.png
+binario 3606ce75a11c9a15a0a62285e417f688089c6a2e7dd2257f4791fb2320bd25be # flutter/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+binario 4eb8e1d8964e2863c9cb26ad328f5b3d37bd4b039cbeaf0f2da312647eb9b357 # flutter/android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+binario 66ec3e9f8c7172f9804b5b2c88203a1b7290bfce61ee8ed4c68350b8fb083444 # flutter/android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+binario 6d8d96867312a194256671c0c4799c2727390c6ae5690e8fc99f324fbece4798 # flutter/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+binario 6ef807d2e07532c85faf2f2e034f532ebf607431fb3547b8a996059b4745a5bf # flutter/assets/logo.png
+binario 7857b11174bac2e712bf2f0db9af07a84c0e73863f9bc0ba112bb47af9d32d4e # flutter/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+binario 7b84cb54b3586b10e47849407b8c65e31d42d6b4d6eaf8c3fd2ca8c1b59c113f # flutter/android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+binario 8026c7579b59b0d5c51aff4280d27b0836a9adcac72b36b02c9590f4e0a408a3 # flutter/android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png
+binario 8594db11408cc11697a35d033a13a9f89d132138080497a1286b9e5c8cb1334d # flutter/android/app/src/main/res/mipmap-hdpi/ic_stat_logo.png
+binario a92eded7266f77107c28ed59ca9081d92ae52dd34e98b5361c947e30991d8d77 # flutter/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+binario b4db33a913dbc767fac54314cb0d37a066eb82fd72443685e9aef97467db2a0d # flutter/windows/runner/resources/app_icon.ico
+binario cffefbde820dcf6f210df7fbd87deb4bebf29733d5bd5af688daaf3147e27948 # flutter/android/app/src/main/res/mipmap-mdpi/ic_stat_logo.png
+binario d87b233d4b10ffec5a7fc3ae9bbbfbce90a476fa3179a6b8746f1d4490d5c11a # flutter/macos/Runner/AppIcon.icns
+binario df2213dc03dba041d680bd08b5198b1ff5dd7c92d48da99ae439ca8fb538123f # flutter/android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+binario e0cf01f1d96c414cca0d06078d18587c968207e869cb8f69221c395970d0ecdb # flutter/assets/icon.svg
+binario e983e0c6155c3181cde7728eb096022edb85a1fc23c48218782827d8888a7677 # flutter/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+binario e9baf01b893046278dc1d1096e25cb9e26efcad92758aedc0f0e4cd9e41cfa5e # flutter/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
+binario eb2f124176d3fbe46cec0b5029e6a4f9b2843053d4e9241377c91252682fadd8 # res/tray-icon.ico
+binario ef30eb37b4c1a63c870039440195243b48015424ed8beaf2a6b041794d50165e # flutter/android/app/src/main/res/mipmap-xxxhdpi/ic_stat_logo.png
+binario ef72a0d0be286407640fe10d7abe8f19527e0d5cd40640c27a892de2a6b510a8 # flutter/android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png
+binario f0d56fe6214bca929fb9012a74c3f95b90f618c897c14b6c0667b6152e650699 # flutter/android/app/src/main/res/mipmap-mdpi/ic_launcher.png

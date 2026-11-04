@@ -13,6 +13,9 @@ const int kMainWindowId = 0;
 
 const kAllDisplayValue = -1;
 
+// GED Assistance: dove sta il codice sorgente (solo codice, mai dati), per la licenza AGPL-3.0.
+const String kGedCodiceSorgente = 'https://github.com/danilgioia-ita/ged-assistenza';
+
 const kKeyLegacyMode = 'legacy';
 const kKeyMapMode = 'map';
 const kKeyTranslateMode = 'translate';

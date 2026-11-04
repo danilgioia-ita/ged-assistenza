@@ -1043,6 +1043,13 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
                   child: Text(_buildDate),
                 ),
                 leading: Icon(Icons.query_builder)),
+            // GED Assistance: la licenza (AGPL-3.0) chiede che chi riceve l'app possa avere il codice sorgente.
+            SettingsTile(
+                onPressed: (context) async {
+                  await launchUrl(Uri.parse(kGedCodiceSorgente));
+                },
+                title: Text('Codice sorgente (AGPL-3.0)'),
+                leading: Icon(Icons.code)),
             if (isAndroid)
               SettingsTile(
                   onPressed: (context) => onCopyFingerprint(_fingerprint),

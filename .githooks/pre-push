@@ -1,0 +1,16 @@
+#!/bin/sh
+# GED Assistance — prima di ogni push, la guardia dei dati veri (tools/guardia-dati-veri/guardia.mjs).
+# Nata il 3/11/2026: dati veri di clienti e del titolare erano finiti in questo repository pubblico.
+# Si attiva con: git config core.hooksPath .githooks   — e non si salta mai con --no-verify.
+remote="$1"
+zero=0000000000000000000000000000000000000000
+esito=0
+while read -r locale sha_locale remoto sha_remoto; do
+  [ "$sha_locale" = "$zero" ] && continue   # cancellazione di un ramo: niente da controllare
+  if [ "$sha_remoto" = "$zero" ]; then
+    node tools/guardia-dati-veri/guardia.mjs --nuovi "$sha_locale" "$remote" || esito=1
+  else
+    node tools/guardia-dati-veri/guardia.mjs --range "$sha_remoto..$sha_locale" || esito=1
+  fi
+done
+exit $esito
