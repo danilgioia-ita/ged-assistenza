@@ -14,6 +14,9 @@ dominio esempio.it
 # autore della libreria hbb_common di RustDesk (Cargo.toml), pubblico
 dominio opentradesolutions.com
 dominio rustdesk.com
+# la riga «Co-Authored-By» dei commit e gli indirizzi senza risposta di GitHub
+dominio anthropic.com
+dominio noreply.github.com
 
 # icone e logo di GED Assistance (24-25/10/2026): marchio nostro, pubblico
 binario 04759b8abad12b6738883c14c0f931e936b62ba4c632d150b54e6f149273413d # flutter/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png

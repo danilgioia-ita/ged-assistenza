@@ -1,16 +1,23 @@
 #!/bin/sh
-# GED Assistance — prima di ogni push, la guardia dei dati veri (tools/guardia-dati-veri/guardia.mjs).
-# Nata il 3/11/2026: dati veri di clienti e del titolare erano finiti in questo repository pubblico.
-# Si attiva con: git config core.hooksPath .githooks   — e non si salta mai con --no-verify.
+# GED Assistance — prima di ogni push, la guardia dei dati veri. Nata il 3/11/2026: dati veri di clienti e del
+# titolare erano finiti nel repository pubblico. NON si attiva con core.hooksPath: si installa nella cartella comune
+# di git con tools/guardia-dati-veri/installa.sh, così vale in TUTTI i worktree (anche su rami vecchi senza questo
+# file) e usa la copia della guardia installata lì, che un commit non può cambiare. Mai --no-verify.
 remote="$1"
+G="$(git rev-parse --git-common-dir)/guardia-dati-veri"
+if [ ! -f "$G/guardia.mjs" ]; then echo "GUARDIA DEI DATI VERI: non installata in $G — nel dubbio blocco" >&2; exit 1; fi
 zero=0000000000000000000000000000000000000000
 esito=0
 while read -r locale sha_locale remoto sha_remoto; do
   [ "$sha_locale" = "$zero" ] && continue   # cancellazione di un ramo: niente da controllare
+  node "$G/guardia.mjs" --ammessi "$G/ammessi.txt" --testo "$locale" "$remoto" </dev/null || esito=1
+  if [ "$(git cat-file -t "$sha_locale")" = "tag" ]; then
+    git cat-file tag "$sha_locale" | node "$G/guardia.mjs" --ammessi "$G/ammessi.txt" --stdin || esito=1
+  fi
   if [ "$sha_remoto" = "$zero" ]; then
-    node tools/guardia-dati-veri/guardia.mjs --nuovi "$sha_locale" "$remote" || esito=1
+    node "$G/guardia.mjs" --ammessi "$G/ammessi.txt" --nuovi "$sha_locale" "$remote" </dev/null || esito=1
   else
-    node tools/guardia-dati-veri/guardia.mjs --range "$sha_remoto..$sha_locale" || esito=1
+    node "$G/guardia.mjs" --ammessi "$G/ammessi.txt" --range "$sha_remoto..$sha_locale" </dev/null || esito=1
   fi
 done
 exit $esito

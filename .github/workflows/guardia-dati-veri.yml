@@ -29,4 +29,4 @@ jobs:
       - name: Tutti i commit GED dalla base RustDesk 1.5.0
         run: |
           git fetch --no-tags https://github.com/rustdesk/rustdesk.git refs/tags/1.5.0:refs/tags/1.5.0 || true
-          node tools/guardia-dati-veri/guardia.mjs --range "1.5.0..HEAD"
+          node tools/guardia-dati-veri/guardia.mjs --almeno-uno --range "1.5.0..HEAD"

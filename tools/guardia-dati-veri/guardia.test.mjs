@@ -85,3 +85,88 @@ test('ammessi.txt del repository si legge senza errori', () => {
   const a = leggiAmmessi()
   assert.ok(a.domini.has('example.com'))
 })
+
+// ---- dalla revisione del 4/11: i travestimenti, i PDF a più flussi, i messaggi e i nomi dei file ----
+import { execFileSync } from 'node:child_process'
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { createHash } from 'node:crypto'
+import { ibanValido } from './guardia.mjs'
+
+const tipiIn = (testo, a = vuoti()) => cercaNelTesto(testo, a).map(t => t.tipo)
+
+test('i travestimenti: spazi, punti, trattini, minuscole, [at], spazi invisibili', () => {
+  const spaziata = PIVA.slice(0, 3) + ' ' + PIVA.slice(3, 7) + ' ' + PIVA.slice(7)
+  assert.ok(tipiIn(`piva ${spaziata}`).includes('partita IVA'))
+  assert.ok(tipiIn(`piva ${PIVA.split('').join('.')}`).includes('partita IVA'))
+  assert.ok(tipiIn(`cf ${CF.slice(0, 6)}-${CF.slice(6, 11)}-${CF.slice(11)}`).includes('codice fiscale'))
+  assert.ok(tipiIn(`cf ${CF.slice(0, 8)}​${CF.slice(8)}`).includes('codice fiscale'))
+  assert.ok(tipiIn(`matricola ${MATRICOLA.toLowerCase()}`).includes('matricola RT'))
+  assert.ok(tipiIn(`scrivi a ${PEC.replace('@', ' [at] ')}`).includes('email o PEC'))
+  assert.ok(tipiIn(`scrivi a ${PEC.replace('@', '&#64;')}`).includes('email o PEC'))
+})
+
+test('IBAN a gruppi di quattro e di altri paesi, col controllo mod-97', () => {
+  const aGruppi = IBAN.match(/.{1,4}/g).join(' ')
+  assert.ok(ibanValido(IBAN))
+  assert.ok(tipiIn(`iban ${aGruppi}`).includes('IBAN'))
+  assert.equal(ibanValido(IBAN.slice(0, -1) + ((Number(IBAN.at(-1)) + 1) % 10)), false)
+})
+
+test('«Icon@2x.png» non è un\'email', () => {
+  assert.deepEqual(tipiIn('Icon-App-20x20@2x.png'), [])
+})
+
+test('un valore dichiarato con l\'impronta passa senza essere scritto in chiaro', () => {
+  const a = vuoti()
+  a.impronte = new Set([createHash('sha256').update(PIVA).digest('hex')])
+  assert.deepEqual(tipiIn(`C.F. e P.IVA: ${PIVA}`, a), [])
+})
+
+function pdfConFlussi(testi) {
+  let corpo = '%PDF-1.4\n'
+  const parti = [Buffer.from(corpo)]
+  testi.forEach((t, i) => {
+    const f = deflateSync(Buffer.from(t))
+    parti.push(Buffer.from(`${i + 1} 0 obj << /Filter /FlateDecode /Length ${f.length} >>\nstream\n`), f, Buffer.from('\nendstream\nendobj\n'))
+  })
+  parti.push(Buffer.from('%%EOF\n'))
+  return Buffer.concat(parti)
+}
+
+test('PDF a più flussi: il dato si vede anche nel secondo, nel terzo e nel quarto', () => {
+  for (let n = 2; n <= 4; n++) {
+    const testi = Array.from({ length: n }, (_, i) => i === n - 1 ? `BT [(P.IVA ${PIVA.slice(0, 5)})-20(${PIVA.slice(5)})] TJ ET` : 'BT (niente) Tj ET')
+    const esiti = controllaContenuto('m.pdf', pdfConFlussi(testi), null, vuoti())
+    assert.ok(esiti.some(e => e.tipo === 'partita IVA'), `flusso ${n} di ${n}`)
+  }
+})
+
+test('PDF: stringhe esadecimali ed escape ottali', () => {
+  const esa = '<' + Buffer.from(`P.IVA ${PIVA}`).toString('hex') + '>'
+  assert.ok(controllaContenuto('m.pdf', pdfConFlussi([`BT ${esa} Tj ET`]), null, vuoti()).some(e => e.tipo === 'partita IVA'))
+  const ottale = PIVA.split('').map(c => '\\' + c.charCodeAt(0).toString(8)).join('')
+  assert.ok(controllaContenuto('m.pdf', pdfConFlussi([`BT (${ottale}) Tj ET`]), null, vuoti()).some(e => e.tipo === 'partita IVA'))
+})
+
+test('nel repository: messaggio del commit e nome del file vengono guardati, e i valori escono mascherati', () => {
+  const guardia = join(dirname(fileURLToPath(import.meta.url)), 'guardia.mjs')
+  const dir = mkdtempSync(join(tmpdir(), 'guardia-'))
+  const g = (...a) => execFileSync('git', a, { cwd: dir, stdio: 'pipe' }).toString()
+  try {
+    g('init', '-q', '-b', 'main'); g('config', 'user.email', 'prova@example.com'); g('config', 'user.name', 'Prova')
+    writeFileSync(join(dir, 'pulito.txt'), 'niente\n'); g('add', '.'); g('commit', '-q', '-m', 'primo')
+    const base = g('rev-parse', 'HEAD').trim()
+    writeFileSync(join(dir, 'altro.txt'), 'niente\n'); g('add', '.'); g('commit', '-q', '-m', `cliente con piva ${PIVA}`)
+    writeFileSync(join(dir, `scontrino-${CF}.txt`), 'niente\n'); g('add', '.'); g('commit', '-q', '-m', 'file')
+    let uscita = ''
+    try { execFileSync('node', [guardia, '--ammessi', '/dev/null', '--range', `${base}..HEAD`], { cwd: dir, stdio: 'pipe' }); assert.fail('doveva bloccare') } catch (e) { uscita = e.stderr.toString(); assert.equal(e.status, 1) }
+    assert.match(uscita, /messaggio del commit/)
+    assert.match(uscita, /nome di un file/)
+    assert.ok(!uscita.includes(PIVA) && !uscita.includes(CF), 'mai in chiaro')
+    // un intervallo vuoto con --almeno-uno è un errore, non un «pulito»
+    try { execFileSync('node', [guardia, '--almeno-uno', '--range', 'HEAD..HEAD'], { cwd: dir, stdio: 'pipe' }); assert.fail('doveva bloccare') } catch (e) { assert.equal(e.status, 2) }
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})

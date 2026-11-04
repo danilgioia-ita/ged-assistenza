@@ -11,9 +11,18 @@
 //
 // Nei messaggi i valori trovati escono MASCHERATI: i registri di GitHub di un repository pubblico li legge chiunque.
 //
+// COSA NON FA, e va saputo: ferma gli IDENTIFICATIVI (CF, P.IVA, matricole, PEC, cellulari, IBAN), non i nomi delle
+// persone, le ragioni sociali o gli indirizzi: quelli non hanno una cifra di controllo. Le prove si scrivono con dati
+// inventati, sempre. E un PDF non si legge mai per intero con certezza: un PDF con dati veri non si dichiara mai.
+// La guardia locale va installata nella cartella comune di git (tools/guardia-dati-veri/installa.sh), non con
+// core.hooksPath: un percorso relativo vale solo nei worktree che hanno quel file, e negli altri git tace.
+//
 //   node tools/guardia-dati-veri/guardia.mjs --range <da>..<a>          commit nell'intervallo
 //   node tools/guardia-dati-veri/guardia.mjs --nuovi <sha> <remote>      commit non ancora su <remote>
 //   node tools/guardia-dati-veri/guardia.mjs --file <percorso>...        file sul disco, interi
+//   node tools/guardia-dati-veri/guardia.mjs --testo <testo>...          nomi di rami e tag
+//   node tools/guardia-dati-veri/guardia.mjs --stdin                     testo di un tag annotato
+//   opzioni: --ammessi <file> (altrimenti ammessi.txt accanto alla guardia), --almeno-uno (intervallo vuoto = errore)
 //
 // Uscita 0 = pulito, 1 = trovato qualcosa, 2 = uso sbagliato o errore (anche questo blocca: nel dubbio, no).
 
@@ -59,11 +68,41 @@ const RICONOSCITORI = [
   { tipo: 'codice fiscale', re: /(?<![A-Z0-9])[A-Z]{6}[0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z](?![A-Z0-9])/gi, vale: cfValido },
   { tipo: 'partita IVA', re: /(?<![0-9])[0-9]{11}(?![0-9])/g, vale: pivaValida },
   // matricola RT: anno/tipo (2 cifre) + produttore (3 lettere) + progressivo (6 cifre), es. 99ZZZ012345 (ZZZ = finta, ammessa)
-  { tipo: 'matricola RT', re: /(?<![A-Z0-9])[0-9]{2}[A-Z]{3}[0-9]{6}(?![A-Z0-9])/g, vale: m => !/^[0-9]{2}ZZZ/.test(m) },
-  { tipo: 'email o PEC', re: /[A-Z0-9._%+-]+@[A-Z0-9-]+(?:\.[A-Z0-9-]+)*\.[A-Z]{2,}/gi, vale: (e, a) => !dominioAmmesso(e, a) },
-  { tipo: 'cellulare', re: /(?<![0-9])(?:\+39[ .-]?)?3[0-9]{2}[ .-]?[0-9]{3}[ .-]?[0-9]{3,4}(?![0-9])/g, vale: t => t.replace(/\D/g, '').replace(/^39(?=3)/, '').length === 10 },
-  { tipo: 'IBAN', re: /(?<![A-Z0-9])IT[0-9]{2}[A-Z][0-9]{10}[0-9A-Z]{12}(?![A-Z0-9])/g, vale: () => true },
+  { tipo: 'matricola RT', re: /(?<![A-Z0-9])[0-9]{2}[A-Z]{3}[0-9]{6}(?![A-Z0-9])/gi, vale: m => !/^[0-9]{2}ZZZ/i.test(m) },
+  // «Icon@2x.png» non è un'email: un «dominio» che finisce con l'estensione di un'immagine si lascia stare
+  { tipo: 'email o PEC', re: /[A-Z0-9._%+-]+@[A-Z0-9-]+(?:\.[A-Z0-9-]+)*\.[A-Z]{2,}/gi, vale: (e, a) => !/@\d+x\.(png|jpe?g|gif|webp)$/i.test(e) && !dominioAmmesso(e, a) },
+  // il cellulare ha già i suoi separatori nel modello: sul testo compattato ogni fila di numeri sembrerebbe un telefono
+  { tipo: 'cellulare', soloIntero: true, re: /(?<![0-9])(?:\+39[ .-]?)?3[0-9]{2}[ .-]?[0-9]{3}[ .-]?[0-9]{3,4}(?![0-9])/g, vale: t => t.replace(/\D/g, '').replace(/^39(?=3)/, '').length === 10 },
+  // qualunque paese, anche stampato a gruppi di quattro; vale solo se torna il controllo mod-97
+  { tipo: 'IBAN', re: /(?<![A-Z0-9])[A-Z]{2}[0-9]{2}(?: ?[A-Z0-9]{4}){2,7}(?: ?[A-Z0-9]{1,3})?(?![A-Z0-9])/gi, vale: ibanValido },
 ]
+
+export function ibanValido(t) {
+  const c = t.replace(/ /g, '').toUpperCase()
+  if (c.length < 15 || c.length > 34) return false
+  const giro = (c.slice(4) + c.slice(0, 4)).replace(/[A-Z]/g, l => String(l.charCodeAt(0) - 55))
+  let r = 0
+  for (const d of giro) r = (r * 10 + Number(d)) % 97
+  return r === 1
+}
+
+// I dati si travestono: «012 3456 7890 1», «R.S.S.M…», «mario[at]…», «&#64;», spazi a larghezza zero. Si cerca
+// sul testo com'è e su due sue versioni: decodificata e compattata (via spazi, punti, trattini e barre fra lettere
+// e cifre). Così la cifra di controllo resta il filtro contro i falsi positivi, non il formato.
+function versioni(testo) {
+  const decodificato = testo
+    .replace(/[\u200B-\u200D\u2060\uFEFF]/g, '')
+    .replace(/[\uFF10-\uFF19]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFF10 + 48))
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)))
+    .replace(/\\u([0-9a-f]{4})/gi, (_, n) => String.fromCharCode(parseInt(n, 16)))
+    .replace(/%40|\s*[\[(]\s*(?:at|chiocciola)\s*[\])]\s*/gi, '@')
+  const compattato = decodificato.replace(/(?<=[A-Za-z0-9])[ .\-/_]{1,2}(?=[A-Za-z0-9])/g, '')
+  return [[testo, false], [decodificato, false], [compattato, true]].filter(([t], i, a) => a.findIndex(([u]) => u === t) === i)
+}
+
+// solo maiuscolo: in minuscolo, attaccato, combacia con pezzi di codice («do…st») e la cifra di controllo non basta
+const CF_SENZA_BORDI = /[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]/g
 
 const BINARI = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.heic', '.bmp', '.tif', '.tiff', '.pdf', '.ico', '.icns', '.svg'])
 
@@ -79,13 +118,16 @@ export function maschera(v) {
 // ---------- ammessi ----------
 
 export function leggiAmmessi(file = join(QUI, 'ammessi.txt')) {
-  const a = { valori: new Set(), domini: new Set(), binari: new Set() }
+  const a = { valori: new Set(), impronte: new Set(), domini: new Set(), binari: new Set() }
   if (!existsSync(file)) return a
   for (const riga of readFileSync(file, 'utf8').split('\n')) {
     const r = riga.replace(/#.*/, '').trim()
     if (!r) continue
     const [chi, val] = r.split(/\s+/)
     if (chi === 'valore') a.valori.add(val.toUpperCase())
+    // un dato pubblico ma da non riscrivere in chiaro (per esempio la P.IVA della nostra azienda stampata sul modulo
+    // ufficiale): si dichiara con l'impronta sha256 del valore scritto senza spazi, in maiuscolo
+    else if (chi === 'impronta-valore') a.impronte.add(val.toLowerCase())
     else if (chi === 'dominio') a.domini.add(val.toLowerCase())
     else if (chi === 'binario') a.binari.add(val.toLowerCase())
     else throw new Error(`ammessi.txt: riga non capita «${r}»`)
@@ -95,13 +137,24 @@ export function leggiAmmessi(file = join(QUI, 'ammessi.txt')) {
 
 // ---------- analisi ----------
 
-export function cercaNelTesto(testo, ammessi) {
+export function cercaNelTesto(testo, ammessi, { compatta = true } = {}) {
   const trovati = []
-  for (const { tipo, re, vale } of RICONOSCITORI) {
-    for (const m of testo.matchAll(re)) {
-      const v = m[0]
-      if (ammessi.valori.has(v.toUpperCase()) || ammessi.valori.has(v.replace(/\D/g, ''))) continue
-      if (vale(v, ammessi)) trovati.push({ tipo, valore: v })
+  const visti = new Set()
+  for (const [t, compatto] of versioni(testo)) {
+    for (const { tipo, re, vale, soloIntero } of RICONOSCITORI) {
+      if (compatto && (!compatta || soloIntero || tipo === 'email o PEC')) continue
+      // nel testo compattato «cf RSSMRA-80A01-…» diventa «cfRSSMRA80A01…»: il codice fiscale si cerca anche attaccato
+      // ad altre lettere (la struttura e la cifra di controllo bastano a tenere lontani i falsi positivi)
+      const modello = compatto && tipo === 'codice fiscale' ? CF_SENZA_BORDI : re
+      for (const m of t.matchAll(modello)) {
+        const v = m[0]
+        const chiave = tipo + v.replace(/[^A-Za-z0-9@.]/g, '').toUpperCase()
+        if (visti.has(chiave)) continue
+        visti.add(chiave)
+        if (ammessi.impronte?.size && ammessi.impronte.has(createHash('sha256').update(v.replace(/[^A-Za-z0-9@.]/g, '').toUpperCase()).digest('hex'))) continue
+        if (ammessi.valori.has(v.toUpperCase()) || ammessi.valori.has(v.replace(/\D/g, '')) || ammessi.valori.has(v.replace(/ /g, '').toUpperCase())) continue
+        if (vale(v, ammessi)) trovati.push({ tipo, valore: v })
+      }
     }
   }
   return trovati
@@ -112,7 +165,8 @@ export function cercaNelTesto(testo, ammessi) {
 function testoDelPdf(buf) {
   const s = buf.toString('latin1')
   let testo = s
-  const re = /stream\r?\n/g
+  // «endstream» contiene «stream»: senza il (?<!end) il secondo flusso di un PDF veniva saltato (revisione 4/11)
+  const re = /(?<!end)stream\r?\n/g
   let m
   while ((m = re.exec(s))) {
     const fine = s.indexOf('endstream', m.index)
@@ -120,8 +174,12 @@ function testoDelPdf(buf) {
     try { testo += '\n' + inflateSync(buf.subarray(m.index + m[0].length, fine)).toString('latin1') } catch { /* non compresso o immagine */ }
     re.lastIndex = fine
   }
-  // le stringhe dei PDF sono fra parentesi, con escape: (\(...\))
-  return testo.replace(/\\([()\\])/g, '$1')
+  // le stringhe dei PDF: fra parentesi con escape (anche ottali), in esadecimale <...>, spezzate dal kerning [(01)-20(23)]
+  return testo
+    .replace(/<([0-9A-Fa-f\s]{2,})>/g, (_, h) => { const x = h.replace(/\s/g, ''); const b = Buffer.from(x.length % 2 ? x + '0' : x, 'hex'); return '(' + (b[0] === 0xfe && b[1] === 0xff ? b.subarray(2).swap16().toString('utf16le') : b.toString('latin1')) + ')' })
+    .replace(/\\([0-7]{1,3})/g, (_, o) => String.fromCharCode(parseInt(o, 8)))
+    .replace(/\\([()\\])/g, '$1')
+    .replace(/\)\s*-?\d+(?:\.\d+)?\s*\(/g, '')
 }
 
 export function controllaContenuto(percorso, buf, soloRighe, ammessi) {
@@ -132,7 +190,8 @@ export function controllaContenuto(percorso, buf, soloRighe, ammessi) {
     const impronta = createHash('sha256').update(buf).digest('hex')
     if (!ammessi.binari.has(impronta)) esiti.push({ percorso, riga: 0, tipo: 'file binario non dichiarato', valore: impronta, mostra: `impronta ${impronta} (se è finto o pubblico, aggiungi «binario ${impronta}» ad ammessi.txt con una nota)` })
     if (ext === '.pdf' || buf.subarray(0, 5).toString() === '%PDF-') {
-      for (const t of cercaNelTesto(testoDelPdf(buf), ammessi)) esiti.push({ percorso, riga: 0, ...t })
+      // niente testo compattato nei PDF: le tabelle delle larghezze dei caratteri («556 556 …») diventerebbero P.IVA
+      for (const t of cercaNelTesto(testoDelPdf(buf), ammessi, { compatta: false })) esiti.push({ percorso, riga: 0, ...t })
     }
     return esiti
   }
@@ -166,10 +225,14 @@ export function controllaCommit(commit, ammessi) {
   // --root: anche il primo commit di un repository; -m --first-parent: i merge contano per ciò che portano nel ramo
   const uscita = git(['diff-tree', '-r', '--root', '--no-commit-id', '--no-renames', '-m', '--first-parent', '-z', commit]).toString('utf8')
   const parti = uscita.split('\0').filter(Boolean)
+  // anche il messaggio del commit (l'autore no: è il nostro account, già pubblico in tutta la storia)
+  const messaggio = git(['log', '-1', '--format=%B', commit]).toString('utf8')
+  for (const t of cercaNelTesto(messaggio, ammessi)) esiti.push({ commit: commit.slice(0, 9), percorso: '(messaggio del commit)', riga: 0, ...t })
   for (let i = 0; i + 1 < parti.length; i += 2) {
     const [, modo, vecchio, nuovo, stato] = parti[i].replace(/^:/, '').split(' ')
     const percorso = parti[i + 1]
     if (stato === 'D' || VUOTO.test(nuovo) || modo === '160000') continue // cancellati e sottomoduli
+    for (const t of cercaNelTesto(percorso, ammessi)) esiti.push({ commit: commit.slice(0, 9), percorso: '(nome di un file)', riga: 0, ...t })
     const buf = git(['cat-file', 'blob', nuovo])
     const solo = VUOTO.test(vecchio) ? null : righeAggiunte(vecchio, nuovo)
     for (const e of controllaContenuto(percorso, buf, solo, ammessi)) esiti.push({ commit: commit.slice(0, 9), ...e })
@@ -183,10 +246,15 @@ function commitDa(args) {
 
 // ---------- principale ----------
 
+const AMMESSI_VUOTI = { valori: new Set(), impronte: new Set(), domini: new Set(), binari: new Set() }
+
 function stampa(esiti) {
   const visti = new Set()
   for (const e of esiti) {
-    const dove = `${e.commit ? e.commit + ' ' : ''}${e.percorso}${e.riga ? ':' + e.riga : ''}`
+    // anche il percorso può contenere il dato (un file chiamato col codice fiscale): si maschera ciò che si riconosce
+    let percorso = e.percorso
+    for (const t of cercaNelTesto(percorso, AMMESSI_VUOTI)) percorso = percorso.split(t.valore).join(maschera(t.valore))
+    const dove = `${e.commit ? e.commit + ' ' : ''}${percorso}${e.riga ? ':' + e.riga : ''}`
     const chiave = dove + e.tipo + e.valore
     if (visti.has(chiave)) continue
     visti.add(chiave)
@@ -196,18 +264,37 @@ function stampa(esiti) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
-    const [modo, ...resto] = process.argv.slice(2)
-    const ammessi = leggiAmmessi()
+    let argomenti = process.argv.slice(2)
+    let fileAmmessi
+    const almenoUno = argomenti.includes('--almeno-uno')
+    argomenti = argomenti.filter(a => a !== '--almeno-uno')
+    const iA = argomenti.indexOf('--ammessi')
+    if (iA >= 0) { fileAmmessi = argomenti[iA + 1]; argomenti.splice(iA, 2) }
+    const [modo, ...resto] = argomenti
+    const ammessi = leggiAmmessi(fileAmmessi)
     let esiti = []
     let quanti = 0
     if (modo === '--range' && resto.length === 1) {
       for (const c of commitDa([resto[0]])) { esiti.push(...controllaCommit(c, ammessi)); quanti++ }
     } else if (modo === '--nuovi' && resto.length === 2) {
       for (const c of commitDa([resto[0], '--not', `--remotes=${resto[1]}`])) { esiti.push(...controllaCommit(c, ammessi)); quanti++ }
+    } else if (modo === '--testo' && resto.length) {
+      // nomi di rami e di tag, o altro testo che il pre-push passa a mano
+      for (const t of resto) for (const e of cercaNelTesto(t, ammessi)) esiti.push({ percorso: '(nome di un ramo o di un tag)', riga: 0, ...e })
+      quanti = resto.length
+    } else if (modo === '--stdin') {
+      // il testo di un tag annotato, da `git cat-file tag`
+      for (const e of cercaNelTesto(readFileSync(0, 'utf8'), ammessi)) esiti.push({ percorso: '(messaggio di un tag)', riga: 0, ...e })
+      quanti = 1
     } else if (modo === '--file' && resto.length) {
       for (const f of resto) { esiti.push(...controllaContenuto(f, readFileSync(f), null, ammessi)); quanti++ }
     } else {
-      console.error('uso: guardia.mjs --range <da>..<a> | --nuovi <sha> <remote> | --file <percorso>...')
+      console.error('uso: guardia.mjs [--ammessi <file>] [--almeno-uno] --range <da>..<a> | --nuovi <sha> <remote> | --file <percorso>... | --testo <testo>... | --stdin')
+      process.exit(2)
+    }
+    // un intervallo vuoto nel controllo di GitHub vuol dire che la base è sbagliata, non che è tutto pulito
+    if (almenoUno && quanti === 0) {
+      console.error('GUARDIA DEI DATI VERI: nessun commit da controllare, e qui ce ne devono essere. Nel dubbio blocco.')
       process.exit(2)
     }
     if (esiti.length) {
