@@ -42,6 +42,14 @@ pub const PRIVACY_MODE_IMPL_WIN_EXCLUDE_FROM_CAPTURE: &str =
     "privacy_mode_impl_exclude_from_capture";
 pub const PRIVACY_MODE_IMPL_WIN_VIRTUAL_DISPLAY: &str = "privacy_mode_impl_virtual_display";
 
+// GED ASSISTANCE (6/11/2026): il «Modo 2» della privacy (schermo virtuale) e' spento per scelta.
+// Resta solo il Modo 1, che copre il monitor del cliente con lo schermo di GED Service: cosi' il
+// tecnico vede UNA voce, «Modalita' privacy», e sul PC del cliente il driver dello schermo virtuale
+// non si collega mai per la privacy. Il codice di RustDesk resta tutto: per riattivarlo basta
+// rimettere `true` qui (elenco dei modi, modo di ripiego e costruttore leggono solo questa costante).
+#[cfg(windows)]
+const GED_PRIVACY_MODO_2_ATTIVO: bool = false;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "t", content = "c")]
 pub enum PrivacyModeState {
@@ -98,7 +106,7 @@ lazy_static::lazy_static! {
                 if display_service::is_privacy_mode_mag_supported() {
                     PRIVACY_MODE_IMPL_WIN_MAG
                 } else {
-                    if is_installed() {
+                    if GED_PRIVACY_MODO_2_ATTIVO && is_installed() {
                         PRIVACY_MODE_IMPL_WIN_VIRTUAL_DISPLAY
                     } else {
                         ""
@@ -158,9 +166,11 @@ lazy_static::lazy_static! {
                 });
             }
 
-            map.insert(win_virtual_display::PRIVACY_MODE_IMPL, |impl_key: &str| {
+            if GED_PRIVACY_MODO_2_ATTIVO {
+                map.insert(win_virtual_display::PRIVACY_MODE_IMPL, |impl_key: &str| {
                     Box::new(win_virtual_display::PrivacyModeImpl::new(impl_key))
                 });
+            }
         }
         Arc::new(Mutex::new(map))
     };
@@ -340,7 +350,10 @@ pub fn get_supported_privacy_mode_impl() -> Vec<(&'static str, &'static str)> {
             }
         }
 
-        if is_installed() && crate::platform::windows::is_self_service_running() {
+        if GED_PRIVACY_MODO_2_ATTIVO
+            && is_installed()
+            && crate::platform::windows::is_self_service_running()
+        {
             vec_impls.push((
                 PRIVACY_MODE_IMPL_WIN_VIRTUAL_DISPLAY,
                 "privacy_mode_impl_virtual_display_tip",
