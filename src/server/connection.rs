@@ -5138,9 +5138,11 @@ impl Connection {
                             5_000,
                         );
                         if err_msg.is_empty() {
+                            // GED: col Modo 2 spento la richiesta può ripiegare sul Modo 1; al tecnico si dice
+                            // il modo davvero acceso, altrimenti lo salverebbe e lo richiederebbe ogni volta.
                             crate::common::make_privacy_mode_msg(
                                 back_notification::PrivacyModeState::PrvOnSucceeded,
-                                impl_key,
+                                privacy_mode::get_cur_impl_key().unwrap_or(impl_key),
                             )
                         } else {
                             log::error!(
