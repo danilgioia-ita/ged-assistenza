@@ -55,8 +55,10 @@ jobs:
   generate-bridge:
     uses: ./.github/workflows/bridge.yml
 
+  # GED: la DLL della finestra in primo piano (privacy Modo 1) con il NOSTRO schermo invece
+  # della scritta di RustDesk; il flusso originale di RustDesk resta intatto per i merge.
   build-RustDeskTempTopMostWindow:
-    uses: ./.github/workflows/third-party-RustDeskTempTopMostWindow.yml
+    uses: ./.github/workflows/ged-windowinjection.yml
     strategy:
       fail-fast: false
       matrix:

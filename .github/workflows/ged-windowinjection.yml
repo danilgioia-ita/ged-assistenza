@@ -1,0 +1,98 @@
+name: GED Assistance — WindowInjection.dll con lo schermo privacy GED
+
+# GED ASSISTANCE (6 novembre 2026). Copia di third-party-RustDeskTempTopMostWindow.yml (che resta
+# com'e', per i merge da RustDesk) con un passo in piu': prima di compilare, l'immagine della
+# "modalita' privacy" Modo 1 (compilata DENTRO la DLL come array C) si sostituisce con la nostra,
+# res/ged/schermo-privacy/schermo-privacy-1920x1080.png. Sorgente della DLL: progetto aperto
+# rustdesk-org/RustDeskTempTopMostWindow, licenza MIT, allo stesso commit fissato da RustDesk.
+# Nessun segreto: si scarica, si ritocca, si compila.
+
+on:
+  workflow_call:
+    inputs:
+      upload-artifact:
+        type: boolean
+        default: true
+      target:
+        description: 'Target'
+        required: true
+        type: string
+        default: 'windows-2022'
+      configuration:
+        description: 'Configuration'
+        required: true
+        type: string
+        default: 'Release'
+      platform:
+        description: 'Platform'
+        required: true
+        type: string
+        default: 'x64'
+      target_version:
+        description: 'TargetVersion'
+        required: true
+        type: string
+        default: 'Windows10'
+
+env:
+  project_path: WindowInjection/WindowInjection.vcxproj
+  # stesso commit di third-party-RustDeskTempTopMostWindow.yml: se si aggiorna la', si aggiorna qui
+  topmost_commit: ecd8d6a139eee76845ea66423fb739af450fda90
+  ged_png: ged/res/ged/schermo-privacy/schermo-privacy-1920x1080.png
+
+jobs:
+  build-RustDeskTempTopMostWindow:
+    runs-on: ${{ inputs.target }}
+    strategy:
+      fail-fast: false
+    env:
+      build_output_dir: RustDeskTempTopMostWindow/WindowInjection/${{ inputs.platform }}/${{ inputs.configuration }}
+    steps:
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce # v2
+
+      - name: Prendi l'immagine e lo script GED
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          path: ged
+          sparse-checkout: res/ged/schermo-privacy
+          persist-credentials: false
+
+      - name: Download the source code
+        run: |
+          git clone https://github.com/rustdesk-org/RustDeskTempTopMostWindow RustDeskTempTopMostWindow
+          cd RustDeskTempTopMostWindow
+          git checkout ${{ env.topmost_commit }}
+
+      - name: Metti lo schermo privacy GED nel sorgente della DLL
+        shell: bash
+        run: python ged/res/ged/schermo-privacy/prepara_windowinjection.py RustDeskTempTopMostWindow "${{ env.ged_png }}"
+
+      - name: Build the project
+        run: |
+          cd RustDeskTempTopMostWindow
+          msbuild ${{ env.project_path }} -p:Configuration=${{ inputs.configuration }} -p:Platform=${{ inputs.platform }} /p:TargetVersion=${{ inputs.target_version }}
+
+      # La DLL deve contenere il NOSTRO PNG: se un giorno lo script o il progetto cambiano e
+      # l'immagine di RustDesk rientra, il giro diventa rosso invece di consegnarla in silenzio.
+      - name: Controlla che la DLL contenga la nostra immagine
+        shell: bash
+        run: |
+          python - "${{ env.ged_png }}" "${{ env.build_output_dir }}/WindowInjection.dll" <<'EOF'
+          import sys
+          png = open(sys.argv[1], 'rb').read()
+          dll = open(sys.argv[2], 'rb').read()
+          meta = len(png) // 2
+          for pezzo in (png[:256], png[meta:meta + 256], png[-256:]):
+              if pezzo not in dll:
+                  sys.exit('ERRORE: la DLL non contiene il PNG di GED Service')
+          print(f'OK: WindowInjection.dll ({len(dll)} byte) contiene il PNG GED ({len(png)} byte)')
+          EOF
+
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ inputs.upload-artifact }}
+        with:
+          name: topmostwindow-artifacts-${{ inputs.platform }}
+          path: |
+            ./${{ env.build_output_dir }}/WindowInjection.dll
