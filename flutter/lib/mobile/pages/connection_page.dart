@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_hbb/models/peer_model.dart';
 
 import '../../common.dart';
+import '../../common/ged_ipad.dart';
 import '../../common/widgets/peer_tab_page.dart';
 import '../../common/widgets/autocomplete.dart';
 import '../../consts.dart';
@@ -80,6 +81,12 @@ class _ConnectionPageState extends State<ConnectionPage> {
   @override
   Widget build(BuildContext context) {
     Provider.of<FfiModel>(context);
+    // Tecnico su iPad: due colonne (elenco a sinistra, connessione a destra). Su iPhone e altrove resta il layout di prima.
+    final dueColonne = gedLayoutDueColonne(
+        outgoingOnly: bind.isOutgoingOnly(),
+        isIOS: isIOS,
+        latoCorto: MediaQuery.of(context).size.shortestSide);
+    if (dueColonne) return _buildDueColonne();
     return CustomScrollView(
       slivers: [
         SliverList(
@@ -94,6 +101,61 @@ class _ConnectionPageState extends State<ConnectionPage> {
         )
       ],
     ).marginOnly(top: 2, left: 10, right: 10);
+  }
+
+  /// iPad: a sinistra le schede dei computer (recenti, preferiti, rubrica), a destra il campo ID grande
+  /// e i tasti per collegarsi o aprire il trasferimento file.
+  Widget _buildDueColonne() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(flex: 4, child: PeerTabPage().marginOnly(left: 10, right: 6)),
+        const VerticalDivider(width: 1),
+        Expanded(
+          flex: 5,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildRemoteIDTextField(dueColonne: true),
+                    const SizedBox(height: 16),
+                    Row(children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                              minimumSize:
+                                  Size(0, gedAltezzaTasto(52))),
+                          icon: const Icon(Icons.connected_tv),
+                          label: Text(translate('Connect')),
+                          onPressed: onConnect,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                              minimumSize:
+                                  Size(0, gedAltezzaTasto(52))),
+                          icon: const Icon(Icons.folder_open),
+                          label: Text(translate('Transfer file')),
+                          onPressed: () => connect(context, _idController.id,
+                              isFileTransfer: true),
+                        ),
+                      ),
+                    ]),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ).marginOnly(top: 2);
   }
 
   /// Callback for the connect button.
@@ -147,9 +209,9 @@ class _ConnectionPageState extends State<ConnectionPage> {
 
   /// UI for the remote ID TextField.
   /// Search for a peer and connect to it if the id exists.
-  Widget _buildRemoteIDTextField() {
+  Widget _buildRemoteIDTextField({bool dueColonne = false}) {
     final w = SizedBox(
-      height: 84,
+      height: gedAltezzaCampoId(dueColonne),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
         child: Ink(
@@ -230,10 +292,10 @@ class _ConnectionPageState extends State<ConnectionPage> {
                         onChanged: (String text) {
                           _idController.id = text;
                         },
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'WorkSans',
                           fontWeight: FontWeight.bold,
-                          fontSize: 30,
+                          fontSize: gedFontCampoId(dueColonne),
                           color: MyTheme.idColor,
                         ),
                         decoration: InputDecoration(
@@ -335,8 +397,8 @@ class _ConnectionPageState extends State<ConnectionPage> {
                         icon: Icon(Icons.clear, color: MyTheme.darkGray)),
                   )),
               SizedBox(
-                width: 60,
-                height: 60,
+                width: gedAltezzaTasto(60),
+                height: gedAltezzaTasto(60),
                 child: IconButton(
                   icon: const Icon(Icons.arrow_forward,
                       color: MyTheme.darkGray, size: 45),
@@ -354,6 +416,7 @@ class _ConnectionPageState extends State<ConnectionPage> {
             .marginOnly(bottom: 10, top: 15, left: 12),
       w
     ]);
+    if (dueColonne) return child;
     return Align(
         alignment: Alignment.topCenter,
         child: Container(constraints: kMobilePageConstraints, child: child));

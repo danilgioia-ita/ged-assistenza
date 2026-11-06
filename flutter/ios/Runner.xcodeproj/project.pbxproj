@@ -364,7 +364,10 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = HZF9JMC8YN;
+				DEVELOPMENT_TEAM = X728M3V35H;
+				CODE_SIGN_STYLE = Manual;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
+				PROVISIONING_PROFILE_SPECIFIER = "GED Assistance Tecnico App Store";
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -434,7 +437,7 @@
 					"-framework",
 					"\"wakelock_plus\"",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.carriez.flutterHbb;
+				PRODUCT_BUNDLE_IDENTIFIER = it.gedservice.assistenza.tecnico;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_STYLE = "non-global";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -560,7 +563,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = HZF9JMC8YN;
+				DEVELOPMENT_TEAM = X728M3V35H;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -630,7 +633,7 @@
 					"-framework",
 					"\"wakelock_plus\"",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.carriez.flutterHbb;
+				PRODUCT_BUNDLE_IDENTIFIER = it.gedservice.assistenza.tecnico;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_STYLE = "non-global";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -648,7 +651,10 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = HZF9JMC8YN;
+				DEVELOPMENT_TEAM = X728M3V35H;
+				CODE_SIGN_STYLE = Manual;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
+				PROVISIONING_PROFILE_SPECIFIER = "GED Assistance Tecnico App Store";
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -718,7 +724,7 @@
 					"-framework",
 					"\"wakelock_plus\"",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.carriez.flutterHbb;
+				PRODUCT_BUNDLE_IDENTIFIER = it.gedservice.assistenza.tecnico;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_STYLE = "non-global";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";

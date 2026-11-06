@@ -2,9 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>aps-environment</key>
-	<string>development</string>
-	<key>com.apple.developer.networking.wifi-info</key>
-	<true/>
+	<!-- Vuoto di proposito (GED Assistance, 27/10/2026). Tolti aps-environment (nessun codice usa le notifiche push
+	     di Apple: l'avviso di apertura arriva dal CRM sul telefono dell'amministratore, non da questa app) e wifi-info
+	     (nessun codice legge il nome della rete Wi-Fi). Ogni capacita' in piu' dovrebbe essere abilitata anche
+	     sull'identificativo dell'app nel portale Apple, altrimenti il profilo di firma non la copre.
+	     La rete locale per le casse NON e' un entitlement: basta NSLocalNetworkUsageDescription in Info.plist. -->
 </dict>
 </plist>

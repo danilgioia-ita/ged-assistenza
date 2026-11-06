@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import '../../common.dart';
+import '../../common/ged_ipad.dart';
 import '../../common/widgets/dialog.dart';
 import '../../common/widgets/login.dart';
 import '../../consts.dart';
@@ -288,6 +289,8 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     Provider.of<FfiModel>(context);
     final outgoingOnly = bind.isOutgoingOnly();
+    final mostraLinkRustDesk =
+        gedMostraLinkRustDesk(outgoingOnly: outgoingOnly, isIOS: isIOS);
     final incomingOnly = bind.isIncomingOnly();
     final customClientSection = CustomSettingsSection(
         child: Column(
@@ -1024,16 +1027,21 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
           title: Text(translate("About")),
           tiles: [
             SettingsTile(
-                onPressed: (context) async {
-                  await launchUrl(Uri.parse(url));
-                },
+                // Nel Tecnico su iOS niente link a rustdesk.com: si mostra il nome dell'app.
+                onPressed: mostraLinkRustDesk
+                    ? (context) async {
+                        await launchUrl(Uri.parse(url));
+                      }
+                    : null,
                 title: Text(translate("Version: ") + version),
                 value: Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text('rustdesk.com',
-                      style: TextStyle(
-                        decoration: TextDecoration.underline,
-                      )),
+                  child: mostraLinkRustDesk
+                      ? Text('rustdesk.com',
+                          style: TextStyle(
+                            decoration: TextDecoration.underline,
+                          ))
+                      : Text(bind.mainGetAppNameSync()),
                 ),
                 leading: Icon(Icons.info)),
             SettingsTile(
@@ -1052,6 +1060,8 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
                     child: Text(_fingerprint),
                   ),
                   leading: Icon(Icons.fingerprint)),
+            // Il Tecnico su iOS e' sola uscita: l'ID locale serve a chi viene controllato, qui no.
+            if (gedMostraIdLocale(outgoingOnly: outgoingOnly, isIOS: isIOS))
             SettingsTile(
                 onPressed: (context) => onCopyId(_myId),
                 title: Text(translate("ID")),
@@ -1060,12 +1070,14 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
                   child: Text(_myId),
                 ),
                 leading: Icon(Icons.perm_identity)),
-            SettingsTile(
-              title: Text(translate("Privacy Statement")),
-              onPressed: (context) =>
-                  launchUrlString('https://rustdesk.com/privacy.html'),
-              leading: Icon(Icons.privacy_tip),
-            )
+            // Informativa di RustDesk: nel Tecnico su iOS non si mostra (nessun indirizzo GED sicuro).
+            if (mostraLinkRustDesk)
+              SettingsTile(
+                title: Text(translate("Privacy Statement")),
+                onPressed: (context) =>
+                    launchUrlString('https://rustdesk.com/privacy.html'),
+                leading: Icon(Icons.privacy_tip),
+              )
           ],
         ),
       ],
@@ -1171,7 +1183,7 @@ void showThemeSettings(OverlayDialogManager dialogManager) async {
 void showAbout(OverlayDialogManager dialogManager) {
   dialogManager.show((setState, close, context) {
     return CustomAlertDialog(
-      title: Text(translate('About RustDesk')),
+      title: Text(translate('About ${bind.mainGetAppNameSync()}')),
       content: Wrap(direction: Axis.vertical, spacing: 12, children: [
         Text('Version: $version'),
         InkWell(
