@@ -1342,14 +1342,16 @@ impl<T: InvokeUiSession> Remote<T> {
             return;
         }
         let lc = self.handler.lc.read().unwrap();
-        if lc.version >= hbb_common::get_version_number("1.2.4")
-            && lc.get_toggle_option("privacy-mode")
-        {
-            let impl_key = lc.get_option("privacy-mode-impl-key");
-            if impl_key == crate::privacy_mode::PRIVACY_MODE_IMPL_WIN_VIRTUAL_DISPLAY
-                && !self.peer_info.is_support_virtual_display()
-            {
-                return;
+        // GED (Danilo, 6/11/2026): la privacy parte da sola a ogni collegamento, non solo se il tecnico l'aveva
+        // lasciata accesa l'ultima volta su quel cliente: lo schermo dice che siamo noi, e non possiamo sapere se
+        // davanti al PC c'è qualcuno (il bar la mattina, la pizzeria la sera). Il tecnico la spegne a mano quando
+        // serve. Solo verso chi la sa fare (Windows): ad Android e Mac non si chiede, se no a ogni collegamento
+        // comparirebbe «non supportata».
+        if lc.version >= hbb_common::get_version_number("1.2.4") && lc.is_privacy_mode_supported() {
+            let mut impl_key = lc.get_option("privacy-mode-impl-key");
+            // Il Modo 2 (schermo virtuale) è spento: una scelta vecchia rimasta salvata ripiega sul Modo 1.
+            if impl_key == crate::privacy_mode::PRIVACY_MODE_IMPL_WIN_VIRTUAL_DISPLAY {
+                impl_key = String::new();
             }
             let mut misc = Misc::new();
             misc.set_toggle_privacy_mode(TogglePrivacyMode {
