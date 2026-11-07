@@ -8,7 +8,8 @@ fn main() {
                 winapi::um::winnt::LANG_ENGLISH,
                 winapi::um::winnt::SUBLANG_ENGLISH_US,
             ))
-            .set_manifest_file("../../res/manifest-portable.xml") // GED 7/11: sempre come amministratore, vedi il file;
+            // GED 7/11/2026: il file scaricato parte sempre come amministratore, vedi res/manifest-portable.xml
+            .set_manifest_file("../../res/manifest-portable.xml");
         match res.compile() {
             Err(e) => {
                 write!(std::io::stderr(), "{}", e).unwrap();
