@@ -188,6 +188,12 @@ class MainService : Service() {
 
     private val powerManager: PowerManager by lazy { applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager }
     private val wakeLock: PowerManager.WakeLock by lazy { powerManager.newWakeLock(PowerManager.ACQUIRE_CAUSES_WAKEUP or PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "rustdesk:wakelock")}
+    // GED (Danilo, 7/11/2026, prova sul tablet Huawei): durante l'assistenza il tablet andava in standby e il
+    // collegamento cadeva. «Schermo acceso durante il collegamento» di RustDesk regge solo con la finestra sopra le altre
+    // app, che la versione cliente non chiede (Android la blocca per le app scaricate). Qui lo schermo resta acceso
+    // (attenuato) finché si trasmette lo schermo, con un tetto di 4 ore se qualcosa non lo rilasciasse.
+    @Suppress("DEPRECATION")
+    private val wakeLockSessione: PowerManager.WakeLock by lazy { powerManager.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "ged:sessione").apply { setReferenceCounted(false) } }
 
     companion object {
         private var _isReady = false // media permission ready status
@@ -259,6 +265,7 @@ class MainService : Service() {
     }
 
     override fun onDestroy() {
+        try { if (wakeLockSessione.isHeld) wakeLockSessione.release() } catch (e: Exception) { Log.w(logTag, "schermo acceso: $e") }
         checkMediaPermission()
         stopService(Intent(this, FloatingWindowService::class.java))
         super.onDestroy()
@@ -611,6 +618,7 @@ class MainService : Service() {
         _isStart = true
         FFI.setFrameRawEnable("video",true)
         MainActivity.rdClipboardManager?.setCaptureStarted(_isStart)
+        try { wakeLockSessione.acquire(4 * 60 * 60 * 1000L) } catch (e: Exception) { Log.w(logTag, "schermo acceso: $e") }
         return true
     }
 
@@ -635,6 +643,7 @@ class MainService : Service() {
         FFI.setFrameRawEnable("video",false)
         _isStart = false
         MainActivity.rdClipboardManager?.setCaptureStarted(_isStart)
+        try { if (wakeLockSessione.isHeld) wakeLockSessione.release() } catch (e: Exception) { Log.w(logTag, "schermo acceso: $e") }
         // release video
         if (reuseVirtualDisplay) {
             // The virtual display video projection can be paused by calling `setSurface(null)`.
