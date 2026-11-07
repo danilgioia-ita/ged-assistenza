@@ -504,7 +504,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
           bind.mainIsProcessTrusted(prompt: true);
           watchIsProcessTrust = true;
         }, help: 'Help', link: translate("doc_mac_permission"));
-      } else if (gedMostraRiquadroMonitoraggioInput(outgoingOnly: isOutgoingOnly) &&
+      // GED: il riquadro «Monitoraggio input» del Mac serve a chi VIENE controllato; il Tecnico (sola uscita) non ne ha bisogno.
+      } else if (!isOutgoingOnly &&
           !bind.mainIsCanInputMonitoring(prompt: false)) {
         return buildInstallCard("Permissions", "config_input", "Configure",
             () async {
