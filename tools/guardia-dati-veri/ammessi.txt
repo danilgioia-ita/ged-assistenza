@@ -46,3 +46,4 @@ binario eb2f124176d3fbe46cec0b5029e6a4f9b2843053d4e9241377c91252682fadd8 # res/t
 binario ef30eb37b4c1a63c870039440195243b48015424ed8beaf2a6b041794d50165e # flutter/android/app/src/main/res/mipmap-xxxhdpi/ic_stat_logo.png
 binario ef72a0d0be286407640fe10d7abe8f19527e0d5cd40640c27a892de2a6b510a8 # flutter/android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png
 binario f0d56fe6214bca929fb9012a74c3f95b90f618c897c14b6c0667b6152e650699 # flutter/android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+binario 3c9381b4a6862b95f868ad12e13b9b5a4ed46b38babeda325e95bd2916c6232f # res/ged/schermo-privacy/schermo-privacy-1920x1080.png — schermata della privacy disegnata da noi: logo GED e numero pubblico dell'assistenza, nessun dato di persone o clienti (dichiarata con l'ok di Danilo del 6/11)
