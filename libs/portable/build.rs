@@ -8,7 +8,7 @@ fn main() {
                 winapi::um::winnt::LANG_ENGLISH,
                 winapi::um::winnt::SUBLANG_ENGLISH_US,
             ))
-            .set_manifest_file("../../res/manifest.xml");
+            .set_manifest_file("../../res/manifest-portable.xml") // GED 7/11: sempre come amministratore, vedi il file;
         match res.compile() {
             Err(e) => {
                 write!(std::io::stderr(), "{}", e).unwrap();
