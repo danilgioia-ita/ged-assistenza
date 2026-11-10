@@ -32,11 +32,8 @@
           />
       </dependentAssembly>
   </dependency>
-  <!-- GED (Danilo, 7/11/2026): il file che il cliente scarica parte SEMPRE come amministratore. Senza, la privacy
-       (Modo 1) non copre lo schermo — «Expected privacy windows to cover 1 monitors, covered 0» sul primo cliente vero —
-       e l'installazione non si completa. Vale SOLO per questo eseguibile esterno: il programma installato
-       (rustdesk.exe, res/manifest.xml) lo avvia anche il servizio nella sessione dell'utente, e con
-       requireAdministrator Windows rifiuterebbe di aprirlo con i permessi normali. -->
+  <!-- Il file scaricato dal cliente parte sempre come amministratore: senza, la modalita' privacy non copre lo schermo
+       e l'installazione non si completa. Vale solo per questo eseguibile; il programma installato usa res/manifest.xml. -->
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
     <security>
       <requestedPrivileges>
