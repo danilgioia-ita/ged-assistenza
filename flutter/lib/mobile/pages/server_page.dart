@@ -61,6 +61,14 @@ class _DropDownAction extends StatelessWidget {
           final isAllowNumericOneTimePassword =
               gFFI.serverModel.allowNumericOneTimePassword;
           return [
+            // GED Assistance, versione cliente: i permessi tolti dalla schermata principale («devono cliccare e
+            // basta», Danilo 10/11) restano qui, per noi, quando serve guardarli o cambiarli.
+            if (bind.isIncomingOnly())
+              PopupMenuItem(
+                value: _kGedImpostazioniAvanzate,
+                child: Text('Impostazioni avanzate'),
+              ),
+            if (bind.isIncomingOnly()) const PopupMenuDivider(),
             if (!isChangeIdDisabled())
               PopupMenuItem(
                 enabled: gFFI.serverModel.connectStatus > 0,
@@ -132,7 +140,10 @@ class _DropDownAction extends StatelessWidget {
           ];
         },
         onSelected: (value) async {
-          if (value == "changeID") {
+          if (value == _kGedImpostazioniAvanzate) {
+            globalKey.currentState?.push(MaterialPageRoute(
+                builder: (_) => const _GedImpostazioniAvanzate()));
+          } else if (value == "changeID") {
             changeIdDialog();
           } else if (value == "setPermanentPassword") {
             setPasswordDialog();
@@ -200,6 +211,30 @@ class _ServerPageState extends State<ServerPage> {
   @override
   Widget build(BuildContext context) {
     checkService();
+    // GED Assistance, versione CLIENTE: schermata ridotta all'osso. Danilo, 10/11, dopo la prova su un tablet Huawei:
+    // i clienti sono negozianti e pizzaioli, «devono cliccare e basta». Gli interruttori dei permessi restano
+    // raggiungibili per noi dal menu ⋮ «Impostazioni avanzate»; il tocco a distanza si chiede col pulsante qui sotto.
+    if (isAndroid && bind.isIncomingOnly()) {
+      return ChangeNotifierProvider.value(
+          value: gFFI.serverModel,
+          child: Consumer<ServerModel>(
+              builder: (context, serverModel, child) => SingleChildScrollView(
+                    controller: gFFI.serverModel.controller,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          buildPresetPasswordWarningMobile(),
+                          serverModel.isStart
+                              ? const _GedClienteAttivo()
+                              : const _GedClienteAvvia(),
+                          const ConnectionManager(),
+                          SizedBox.fromSize(size: const Size(0, 15.0)),
+                        ],
+                      ),
+                    ),
+                  )));
+    }
     return ChangeNotifierProvider.value(
         value: gFFI.serverModel,
         child: Consumer<ServerModel>(
@@ -220,6 +255,140 @@ class _ServerPageState extends State<ServerPage> {
                     ),
                   ),
                 )));
+  }
+}
+
+const String _kGedImpostazioniAvanzate = 'gedImpostazioniAvanzate';
+
+// GED Assistance, versione cliente, servizio fermo: solo il pulsante grande. Niente scheda «Il servizio non è in
+// esecuzione» né interruttori: «devono cliccare e basta» (Danilo, 10/11).
+class _GedClienteAvvia extends StatelessWidget {
+  const _GedClienteAvvia({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final serverModel = Provider.of<ServerModel>(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 48, 24, 0),
+      child: SizedBox(
+        width: double.infinity,
+        height: 96,
+        child: ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20)),
+          ),
+          icon: const Icon(Icons.play_arrow, size: 44),
+          label: Text(translate("Start service"),
+              style:
+                  const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+          onPressed: () => showScamWarning(context, serverModel),
+        ),
+      ),
+    );
+  }
+}
+
+// GED Assistance, versione cliente, servizio attivo: ID e password grandi, da leggere al telefono al tecnico, e
+// «Ferma». Il pulsante del tocco compare solo finché il tocco non è concesso: è l'unico interruttore che il tecnico
+// può aver bisogno di far accendere, e porta al percorso guidato di sempre (consenso in italiano, poi Accessibilità).
+class _GedClienteAttivo extends StatelessWidget {
+  const _GedClienteAttivo({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final serverModel = Provider.of<ServerModel>(context);
+    final showOneTime = serverModel.approveMode != 'click' &&
+        serverModel.verificationMethod != kUsePermanentPassword;
+    const etichetta = TextStyle(
+        fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey);
+    const valore = TextStyle(
+        fontSize: 44, fontWeight: FontWeight.bold, letterSpacing: 2);
+
+    Widget grande(String testo) => FittedBox(
+          fit: BoxFit.scaleDown,
+          child: SelectableText(testo, style: valore),
+        );
+
+    final String stato;
+    final Color coloreStato;
+    if (serverModel.connectStatus == -1) {
+      stato = translate('not_ready_status');
+      coloreStato = Colors.red;
+    } else if (serverModel.connectStatus == 0) {
+      stato = 'Collegamento in corso…';
+      coloreStato = Colors.orange;
+    } else {
+      stato = 'Pronto: comunica ID e password al tecnico';
+      coloreStato = Colors.green;
+    }
+
+    return PaddingCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text('ID', style: etichetta),
+          grande(serverModel.serverId.value.text),
+          const SizedBox(height: 16),
+          Text('Password', style: etichetta),
+          grande(showOneTime ? serverModel.serverPasswd.value.text : '-'),
+          const SizedBox(height: 16),
+          Text(stato,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontSize: 16,
+                  color: coloreStato,
+                  fontWeight: FontWeight.w600)),
+          if (!serverModel.inputOk) ...[
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.touch_app),
+                label: const Text('Fai toccare lo schermo al tecnico',
+                    style: TextStyle(fontSize: 16)),
+                onPressed: serverModel.toggleInput,
+              ),
+            ),
+          ],
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 64,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+              ),
+              icon: const Icon(Icons.stop, size: 32),
+              label: const Text('Ferma',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              onPressed: serverModel.toggleService,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// GED Assistance, versione cliente: la scheda «Permessi» di sempre, tolta dalla schermata principale ma intatta,
+// per noi (menu ⋮ › Impostazioni avanzate).
+class _GedImpostazioniAvanzate extends StatelessWidget {
+  const _GedImpostazioniAvanzate({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Impostazioni avanzate')),
+      body: ChangeNotifierProvider.value(
+        value: gFFI.serverModel,
+        child: const SingleChildScrollView(child: PermissionChecker()),
+      ),
+    );
   }
 }
 
